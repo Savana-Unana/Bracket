@@ -91,7 +91,7 @@ function App() {
   const choicesRef = React.useRef([]);
   const screenRef = React.useRef("intro");
   const holdRef = React.useRef({ active: false, start: 0, frame: 0, destination: null });
-  const [settings, setSettings] = React.useState({ volume: 65, sfx: true, blood: false });
+  const [settings, setSettings] = React.useState({ volume: 65, sfx: true, blood: true });
   const [modOpen, setModOpen] = React.useState(false);
   const [modifiers, setModifiers] = React.useState({
     arena: "Classic Box",
