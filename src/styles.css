@@ -482,6 +482,11 @@ select {
   font-weight: 850;
 }
 
+.tabs button.active {
+  background: #111;
+  color: #fff;
+}
+
 .slider-row,
 .toggle-row {
   display: grid;

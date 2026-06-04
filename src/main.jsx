@@ -5,6 +5,7 @@ import "./styles.css";
 import waterLogo from "./assets/ELogos/Water-Logo.png";
 import poisonLogo from "./assets/ELogos/Toxic-Logo.png";
 import plantLogo from "./assets/ELogos/Plant-Logo.png";
+import baseballLogo from "./assets/ELogos/Baseball-Logo.png";
 import waterSkin from "./assets/ESkins/Water-Normal.png";
 import poisonSkin from "./assets/ESkins/Toxic-Normal.png";
 import plantSkin from "./assets/ESkins/Plant-Normal.png";
@@ -16,6 +17,7 @@ import flytrapIdleAsset from "./assets/EAttack/Flytrap-Idle.png";
 import flytrapAttack1Asset from "./assets/EAttack/Flytrap-Attack1.png";
 import flytrapAttack2Asset from "./assets/EAttack/Flytrap-Attack2.png";
 import flytrapAttack3Asset from "./assets/EAttack/Flytrap-Attack3.png";
+import baseballBatAsset from "./assets/EAttack/Basebat.png";
 import duringLiquidSfx from "./assets/ESFX/During-Liquid.mp3";
 import flytrapChompSfx from "./assets/ESFX/Flytrap-Chomp.mp3";
 import flytrapPlantSfx from "./assets/ESFX/Flytrap-Plant.mp3";
@@ -86,6 +88,20 @@ const fighters = [
     damage: 1,
     stats: {},
     abilities: ["Blue Mode"]
+  },
+  {
+    id: "baseball",
+    name: "Baseball",
+    short: "BB",
+    hue: "#f4f2eb",
+    accent: "#d83a3a",
+    logo: baseballLogo,
+    skin: baseballLogo,
+    hp: 100,
+    weight: 1.1,
+    damage: 1,
+    stats: {},
+    abilities: ["Swing and Miss"]
   }
 ];
 
@@ -417,6 +433,7 @@ function FighterPedestal({ label, fighter, side }) {
 }
 
 function ModifierDrawer({ open, close, modifiers, setModifiers }) {
+  const [activeTab, setActiveTab] = React.useState("arenas");
   const update = (key, value) => {
     setModifiers((current) => {
       const next = { ...current, [key]: value };
@@ -428,30 +445,39 @@ function ModifierDrawer({ open, close, modifiers, setModifiers }) {
   return (
     <aside className={`modifier-drawer ${open ? "open" : ""}`}>
       <button className="drawer-close" onClick={close}><X size={20} /></button>
-      <div className="tabs"><button>Arenas</button><button>Physics</button></div>
-      <select value={modifiers.arena} onChange={(event) => update("arena", event.target.value)}>
-        <option>Classic Box</option>
-        <option>Toxic Garden</option>
-        <option>Flooded Ring</option>
-      </select>
-      {["speed", "damage", "health", "weight"].map((key) => (
-        <label className="slider-row" key={key}>
-          <span>{key[0].toUpperCase() + key.slice(1)} Multiplier</span>
-          <input type="range" min="0.5" max="2" step="0.1" value={modifiers[key]} onChange={(event) => update(key, Number(event.target.value))} />
-          <b>{modifiers[key].toFixed(1)}x</b>
-        </label>
-      ))}
-      {[
-        ["powerMode", "Power Mode"],
-        ["pillowMode", "Pillow Mode"],
-        ["gravity", "Gravity Mode"],
-        ["noCooldown", "No Cooldown"]
-      ].map(([key, label]) => (
-        <label className="toggle-row" key={key}>
-          <input type="checkbox" checked={modifiers[key]} onChange={(event) => update(key, event.target.checked)} />
-          <span>{label}</span>
-        </label>
-      ))}
+      <div className="tabs">
+        <button className={activeTab === "arenas" ? "active" : ""} onClick={() => setActiveTab("arenas")}>Arenas</button>
+        <button className={activeTab === "physics" ? "active" : ""} onClick={() => setActiveTab("physics")}>Physics</button>
+      </div>
+      {activeTab === "arenas" && (
+        <select value={modifiers.arena} onChange={(event) => update("arena", event.target.value)}>
+          <option>Classic Box</option>
+          <option>Toxic Garden</option>
+          <option>Flooded Ring</option>
+        </select>
+      )}
+      {activeTab === "physics" && (
+        <>
+          {["speed", "damage", "health", "weight"].map((key) => (
+            <label className="slider-row" key={key}>
+              <span>{key[0].toUpperCase() + key.slice(1)} Multiplier</span>
+              <input type="range" min="0.5" max="2" step="0.1" value={modifiers[key]} onChange={(event) => update(key, Number(event.target.value))} />
+              <b>{modifiers[key].toFixed(1)}x</b>
+            </label>
+          ))}
+          {[
+            ["powerMode", "Power Mode"],
+            ["pillowMode", "Pillow Mode"],
+            ["gravity", "Gravity Mode"],
+            ["noCooldown", "No Cooldown"]
+          ].map(([key, label]) => (
+            <label className="toggle-row" key={key}>
+              <input type="checkbox" checked={modifiers[key]} onChange={(event) => update(key, event.target.checked)} />
+              <span>{label}</span>
+            </label>
+          ))}
+        </>
+      )}
     </aside>
   );
 }
@@ -478,7 +504,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       activePlants: fighter.id === "plant" ? 0 : null,
       plantChomps: fighter.id === "plant" ? 0 : null,
       maxPlants: fighter.id === "plant" ? 5 : null,
-      nextBlueMode: fighter.id === "gravity" ? 5 : null
+      nextBlueMode: fighter.id === "gravity" ? 5 : null,
+      nextSwing: fighter.id === "baseball" ? 3 : null,
+      swingState: fighter.id === "baseball" ? "Waiting" : null,
+      strikes: fighter.id === "baseball" ? 0 : null,
+      frenzySwings: fighter.id === "baseball" ? 0 : null
     })),
     floating: [],
     winner: null
@@ -498,6 +528,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     const now = performance.now();
     const cooldown = modifiers.noCooldown ? 650 : 4500;
     const blueModeCooldown = modifiers.noCooldown ? 900 : 5000;
+    const baseballCooldown = modifiers.noCooldown ? 900 : 3000;
+    const baseballHold = modifiers.noCooldown ? 650 : 2000;
     const makeImage = (src) => {
       const image = new Image();
       image.src = src;
@@ -506,6 +538,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     const skinImages = selected.map((fighter) => fighter.skin ? makeImage(fighter.skin) : null);
     const hurtSkinImages = selected.map((fighter) => fighter.hurtSkin ? makeImage(fighter.hurtSkin) : null);
     const syringeImage = makeImage(syringeAsset);
+    const baseballBatImage = makeImage(baseballBatAsset);
     const trapImages = [
       makeImage(flytrapIdleAsset),
       makeImage(flytrapAttack1Asset),
@@ -523,10 +556,15 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         activePlants: fighter.id === "plant" ? 0 : null,
         plantChomps: fighter.id === "plant" ? 0 : null,
         maxPlants: fighter.id === "plant" ? 5 : null,
-        nextBlueMode: fighter.id === "gravity" ? 5 : null
+        nextBlueMode: fighter.id === "gravity" ? 5 : null,
+        nextSwing: fighter.id === "baseball" ? baseballCooldown / 1000 : null,
+        swingState: fighter.id === "baseball" ? "Waiting" : null,
+        strikes: fighter.id === "baseball" ? 0 : null,
+        frenzySwings: fighter.id === "baseball" ? 0 : null
       })),
       nextSyringeAt: selected.map((fighter) => (fighter.id === "poison" ? now + cooldown : Infinity)),
       nextBlueModeAt: selected.map((fighter) => (fighter.id === "gravity" ? now + blueModeCooldown : Infinity)),
+      nextBaseballSwingAt: selected.map((fighter) => (fighter.id === "baseball" ? now + baseballCooldown : Infinity)),
       blueModeArrows: [],
       projectiles: [],
       traps: [],
@@ -544,6 +582,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     const normalSpeed = 5.4 * modifiers.speed;
     const powerSpeed = 15.5 * modifiers.speed;
     const trapSpitSpeed = powerSpeed * 0.92;
+    const blueModeSlamSpeed = 18 * modifiers.speed;
     const ballRadius = Math.round(box.w * 0.075);
     const startX = box.w * 0.22;
     const startY = box.h * 0.32;
@@ -573,6 +612,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         trapSpitUntil: 0,
         trappedBy: null,
         slam: null,
+        swing: null,
+        stunnedUntil: 0,
         hurtUntil: 0
       };
     });
@@ -580,6 +621,22 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       ball.vx = Math.cos(angle) * speed;
       ball.vy = Math.sin(angle) * speed;
       if ("baseVx" in ball) {
+        ball.baseVx = ball.vx;
+        ball.baseVy = ball.vy;
+      }
+    };
+    const isAbilityPaused = (ball, time = performance.now()) => ball.powered || ball.slam || time < ball.stunnedUntil;
+    const keepBallSpeed = (ball, time) => {
+      if (game.hp[ball.side] <= 0 || ball.trappedBy || time < ball.stunnedUntil || (ball.swing && !isAbilityPaused(ball, time))) return;
+      const targetSpeed = ball.slam ? blueModeSlamSpeed : ball.powered ? powerSpeed : normalSpeed;
+      const speed = Math.hypot(ball.vx, ball.vy);
+      if (speed < 0.001) {
+        setVelocity(ball, Math.random() * Math.PI * 2, targetSpeed);
+        return;
+      }
+      ball.vx = (ball.vx / speed) * targetSpeed;
+      ball.vy = (ball.vy / speed) * targetSpeed;
+      if (!ball.powered && !ball.slam) {
         ball.baseVx = ball.vx;
         ball.baseVy = ball.vy;
       }
@@ -617,6 +674,15 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       if (wall === "top") return Math.PI / 2 + spread;
       return -Math.PI / 2 + spread;
     };
+    const trapReleaseAngle = (trap) => {
+      const offset = 0.3 + Math.random() * 0.35;
+      return trap.angle + (Math.random() < 0.5 ? -offset : offset);
+    };
+    const getBaseballBatAngle = (ball) => {
+      const target = balls[ball.side ? 0 : 1];
+      const enemyToBaseballAngle = Math.atan2(ball.y - target.y, ball.x - target.x);
+      return enemyToBaseballAngle + (Math.PI * 2) / 3;
+    };
     const nudgeDirection = (moving) => {
       const speed = Math.hypot(moving.vx, moving.vy) || 1;
       const angle = Math.atan2(moving.vy, moving.vx) + (Math.random() - 0.5) * 0.55;
@@ -635,7 +701,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     };
     const getLiquidCooldownFrames = (transparency) => {
       const extraTransparency = Math.max(0, transparency - 30);
-      return Math.max(1.5, 3 - Math.floor(extraTransparency / 5) * 0.5);
+      return Math.max(2.5, 5 - Math.floor(extraTransparency / 5) * 0.5);
     };
     const getPlantMax = (chomps) => 5 + Math.floor(chomps / 5);
     const getWallDistance = (ball, angle) => {
@@ -662,7 +728,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     };
     const getBlueModeDamage = (travelDistance, travelSpan) => {
       const ratio = Math.max(0, Math.min(1, travelDistance / travelSpan));
-      return Math.max(5, Math.round(5 - 5 * ratio + 30 * ratio * ratio));
+      return Math.max(3, Math.round(3 - 3 * ratio + 25 * ratio * ratio));
     };
     const aimAtMovingTarget = (source, target, projectileSpeed, leadMultiplier = 1) => {
       const dx = target.x - source.x;
@@ -722,6 +788,111 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       game.floating.push({ id: `${performance.now()}-${side}`, side, x, y, text: `-${amount}` });
       game.floating = game.floating.slice(-8);
       if (game.hp[side] <= 0) defeatSide(side, performance.now());
+    };
+    const startBaseballSwing = (ball, time) => {
+      const angle = Math.atan2(ball.vy, ball.vx);
+      ball.swing = {
+        startedAt: time,
+        swingAt: time + baseballHold,
+        resumeAngle: angle,
+        frenzy: false,
+        frenzyQueued: false,
+        swung: false,
+        swingingUntil: 0
+      };
+      ball.baseVx = Math.cos(angle) * normalSpeed;
+      ball.baseVy = Math.sin(angle) * normalSpeed;
+      ball.vx = 0;
+      ball.vy = 0;
+    };
+    const startBaseballFrenzySwing = (ball, time) => {
+      const target = balls[ball.side ? 0 : 1];
+      const angle = Math.atan2(target.y - ball.y, target.x - ball.x);
+      ball.swing = {
+        startedAt: time,
+        swingAt: time,
+        resumeAngle: angle,
+        frenzy: true,
+        frenzyQueued: false,
+        swung: false,
+        swingingUntil: 0
+      };
+    };
+    const stunBall = (ball, time) => {
+      ball.powered = false;
+      ball.poweredUntil = 0;
+      ball.slam = null;
+      ball.swing = null;
+      ball.trappedBy = null;
+      ball.trapSpitUntil = 0;
+      ball.vx = 0;
+      ball.vy = 0;
+      ball.stunnedUntil = time + 3000;
+    };
+    const finishBaseballSwing = (ball, time) => {
+      if (!ball.swing || ball.swing.swung) return;
+      const target = balls[ball.side ? 0 : 1];
+      const swingAngle = Math.atan2(target.y - ball.y, target.x - ball.x);
+      const dx = target.x - ball.x;
+      const dy = target.y - ball.y;
+      const swingRange = ball.r * 4.2;
+      const alongBat = dx * Math.cos(swingAngle) + dy * Math.sin(swingAngle);
+      const offBatCenter = Math.abs(dx * Math.sin(swingAngle) - dy * Math.cos(swingAngle));
+      const hit = game.hp[target.side] > 0 && alongBat >= 0 && alongBat <= swingRange && offBatCenter <= target.r;
+
+      if (hit) {
+        if (ball.swing.frenzy) {
+          pushDamage(target.side, 4, target.x, target.y);
+          if (game.hp[target.side] > 0) stunBall(target, time);
+        } else {
+          pushDamage(target.side, 10, target.x, target.y);
+          if (game.hp[target.side] > 0) markPowerAtAngle(target, time, swingAngle);
+          game.effects[ball.side].strikes = 0;
+        }
+      } else if (!ball.swing.frenzy) {
+        game.effects[ball.side].strikes = Math.min(3, (game.effects[ball.side].strikes ?? 0) + 1);
+        ball.swing.frenzyQueued = game.effects[ball.side].strikes >= 3;
+      }
+
+      ball.swing.swung = true;
+      ball.swing.swingStartedAt = time;
+      ball.swing.swingingUntil = time + 160;
+      ball.swing.batStartAngle = getBaseballBatAngle(ball);
+      ball.swing.resumeAngle = swingAngle;
+      setVelocity(ball, swingAngle, normalSpeed * 1.45);
+    };
+    const updateBaseballSwing = (ball, time) => {
+      if (ball.swing?.swung && time >= ball.swing.swingingUntil) {
+        setVelocity(ball, ball.swing.resumeAngle, normalSpeed);
+        if (ball.swing.frenzy) {
+          game.effects[ball.side].frenzySwings = (game.effects[ball.side].frenzySwings ?? 0) + 1;
+          if (game.effects[ball.side].frenzySwings < 10) {
+            startBaseballFrenzySwing(ball, time);
+            return;
+          }
+          game.effects[ball.side].strikes = 0;
+          game.effects[ball.side].frenzySwings = 0;
+          game.nextBaseballSwingAt[ball.side] = time + baseballCooldown;
+          ball.swing = null;
+          return;
+        }
+        if (ball.swing.frenzyQueued) {
+          game.effects[ball.side].frenzySwings = 0;
+          startBaseballFrenzySwing(ball, time);
+          return;
+        }
+        ball.swing = null;
+      }
+      if (!ball.swing && time >= game.nextBaseballSwingAt[ball.side]) {
+        startBaseballSwing(ball, time);
+        game.nextBaseballSwingAt[ball.side] = Infinity;
+      }
+      if (ball.swing && !ball.swing.swung && time >= ball.swing.swingAt) {
+        finishBaseballSwing(ball, time);
+        if (ball.swing && !ball.swing.frenzy && !ball.swing.frenzyQueued) {
+          game.nextBaseballSwingAt[ball.side] = time + baseballCooldown;
+        }
+      }
     };
     const spawnTrap = (side, x, y, angle) => {
       if (game.defeatedSide !== null || game.hp[side] <= 0) return;
@@ -813,6 +984,33 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
       ctx.fillText(`HP: ${game.hp[ball.side]}`, ball.x, ball.y - ball.r - 8);
+    };
+    const drawBaseballBat = (ball, time) => {
+      if (!ball.swing || isAbilityPaused(ball)) return;
+      const swingProgress = ball.swing.swung
+        ? Math.max(0, Math.min(1, (time - ball.swing.swingStartedAt) / 160))
+        : 0;
+      const angle = ball.swing.swung
+        ? ball.swing.batStartAngle + swingProgress * Math.PI
+        : getBaseballBatAngle(ball);
+      const batLength = ball.r * 2.8;
+      const batWidth = ball.r * 3.44;
+
+      ctx.save();
+      ctx.translate(ball.x, ball.y);
+      ctx.rotate(angle + Math.PI / 2);
+      if (baseballBatImage.complete && baseballBatImage.naturalWidth) {
+        ctx.drawImage(baseballBatImage, -batWidth / 2, -batLength - ball.r * 0.25, batWidth, batLength);
+      } else {
+        ctx.strokeStyle = "#b98242";
+        ctx.lineWidth = Math.max(18, batWidth * 0.62);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(0, -ball.r * 0.25);
+        ctx.lineTo(0, -batLength);
+        ctx.stroke();
+      }
+      ctx.restore();
     };
     const drawTrap = (trap) => {
       ctx.save();
@@ -918,6 +1116,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       if (!state.countdown) {
         balls.forEach((ball) => {
           if (game.hp[ball.side] <= 0) return;
+          if (time < ball.stunnedUntil) {
+            ball.vx = 0;
+            ball.vy = 0;
+            return;
+          }
           if (ball.powered && time >= ball.poweredUntil) endPower(ball);
           if (!ball.powered && ball.trapSpitUntil && time >= ball.trapSpitUntil) {
             setVelocity(ball, Math.atan2(ball.vy, ball.vx), normalSpeed);
@@ -933,6 +1136,13 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               ball.x = trap.x;
               ball.y = trap.y;
             }
+            return;
+          }
+          if (ball.swing && !ball.swing.swung && !isAbilityPaused(ball, time)) {
+            ball.vx = Math.cos(ball.swing.resumeAngle) * normalSpeed * 0.08;
+            ball.vy = Math.sin(ball.swing.resumeAngle) * normalSpeed * 0.08;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
             return;
           }
           ball.vy += modifiers.gravity ? 0.045 : 0;
@@ -952,7 +1162,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             } else {
               ball.vx = Math.abs(ball.vx);
             }
-            if (ball.fighter.id === "plant") spawnTrap(ball.side, 8, ball.y, 0);
+            if (ball.fighter.id === "plant" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, 8, ball.y, 0);
           }
           if (ball.x > box.w - ball.r) {
             ball.x = box.w - ball.r;
@@ -967,7 +1177,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             } else {
               ball.vx = -Math.abs(ball.vx);
             }
-            if (ball.fighter.id === "plant") spawnTrap(ball.side, box.w - 8, ball.y, Math.PI);
+            if (ball.fighter.id === "plant" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, box.w - 8, ball.y, Math.PI);
           }
           if (ball.y < ball.r) {
             ball.y = ball.r;
@@ -982,7 +1192,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             } else {
               ball.vy = Math.abs(ball.vy);
             }
-            if (ball.fighter.id === "plant") spawnTrap(ball.side, ball.x, 8, Math.PI / 2);
+            if (ball.fighter.id === "plant" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, ball.x, 8, Math.PI / 2);
           }
           if (ball.y > box.h - ball.r) {
             ball.y = box.h - ball.r;
@@ -997,7 +1207,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             } else {
               ball.vy = -Math.abs(ball.vy);
             }
-            if (ball.fighter.id === "plant") spawnTrap(ball.side, ball.x, box.h - 8, -Math.PI / 2);
+            if (ball.fighter.id === "plant" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, ball.x, box.h - 8, -Math.PI / 2);
           }
         });
 
@@ -1010,7 +1220,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         });
         if (touching && game.defeatedSide === null) {
           const waterSide = balls.find((ball) => ball.fighter.id === "water")?.side;
-          if (waterSide !== undefined) {
+          if (waterSide !== undefined && !isAbilityPaused(balls[waterSide], time) && !isAbilityPaused(balls[waterSide ? 0 : 1], time)) {
             const otherSide = waterSide ? 0 : 1;
             const liquidStarted = !game.liquidContact;
             game.liquidContact = { waterSide, otherSide };
@@ -1047,7 +1257,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         }
 
         selected.forEach((fighter, index) => {
+          const ball = balls[index];
+          const paused = isAbilityPaused(ball, time);
           if (fighter.id === "poison" && game.hp[index] > 0 && game.defeatedSide === null) {
+            if (paused) {
+              game.nextSyringeAt[index] += dt;
+              game.effects[index].nextSyringe = Math.max(0, (game.nextSyringeAt[index] - time) / 1000);
+              return;
+            }
             game.effects[index].nextSyringe = Math.max(0, (game.nextSyringeAt[index] - time) / 1000);
             if (time >= game.nextSyringeAt[index]) {
               const target = balls[index ? 0 : 1];
@@ -1071,6 +1288,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             }
           }
           if (fighter.id === "gravity" && game.hp[index] > 0 && game.defeatedSide === null) {
+            if (paused) {
+              game.nextBlueModeAt[index] += dt;
+              game.effects[index].nextBlueMode = Math.max(0, (game.nextBlueModeAt[index] - time) / 1000);
+              return;
+            }
             game.effects[index].nextBlueMode = Math.max(0, (game.nextBlueModeAt[index] - time) / 1000);
             if (time >= game.nextBlueModeAt[index]) {
               game.blueModeArrows.push({
@@ -1084,15 +1306,46 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               game.nextBlueModeAt[index] = time + blueModeCooldown;
             }
           }
+          if (fighter.id === "baseball" && game.hp[index] > 0 && game.defeatedSide === null) {
+            if (paused) {
+              game.nextBaseballSwingAt[index] += dt;
+              if (ball.swing && !ball.swing.swung) {
+                ball.swing.startedAt += dt;
+                ball.swing.swingAt += dt;
+              }
+              game.effects[index].nextSwing = ball.swing && !ball.swing.swung
+                ? Math.max(0, (ball.swing.swingAt - time) / 1000)
+                : Math.max(0, (game.nextBaseballSwingAt[index] - time) / 1000);
+              game.effects[index].swingState = ball.swing ? "Paused" : "Waiting";
+              return;
+            }
+            updateBaseballSwing(ball, time);
+            if (ball.swing?.frenzy) {
+              game.effects[index].nextSwing = 0;
+              game.effects[index].swingState = "Frenzy";
+            } else if (ball.swing && !ball.swing.swung) {
+              game.effects[index].nextSwing = Math.max(0, (ball.swing.swingAt - time) / 1000);
+              game.effects[index].swingState = "Holding";
+            } else if (ball.swing?.swung) {
+              game.effects[index].nextSwing = 0;
+              game.effects[index].swingState = "Swinging";
+            } else {
+              game.effects[index].nextSwing = Math.max(0, (game.nextBaseballSwingAt[index] - time) / 1000);
+              game.effects[index].swingState = "Waiting";
+            }
+          }
         });
 
         game.blueModeArrows.forEach((arrow) => {
           const target = balls[arrow.target];
           if (arrow.slammed || time - arrow.startedAt < 1000) return;
           if (game.hp[arrow.side] <= 0 || game.hp[arrow.target] <= 0 || game.defeatedSide !== null) return;
+          if (isAbilityPaused(balls[arrow.side], time)) {
+            arrow.startedAt += dt;
+            return;
+          }
 
           const angle = arrow.angle + Math.PI * 2;
-          const slamSpeed = 18 * modifiers.speed;
           target.trappedBy = null;
           target.powered = false;
           target.slam = {
@@ -1100,8 +1353,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             startY: target.y,
             travelSpan: getBlueModeTravelSpan(target, angle)
           };
-          target.vx = Math.cos(angle) * slamSpeed;
-          target.vy = Math.sin(angle) * slamSpeed;
+          target.vx = Math.cos(angle) * blueModeSlamSpeed;
+          target.vy = Math.sin(angle) * blueModeSlamSpeed;
           arrow.slammed = true;
         });
         game.blueModeArrows = game.blueModeArrows.filter((arrow) => time - arrow.startedAt < 1200);
@@ -1136,7 +1389,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
           return projectile.x > -30 && projectile.x < box.w + 30 && projectile.y > -30 && projectile.y < box.h + 30;
         });
 
-        if (game.defeatedSide === null && time - game.lastToxinTickAt >= 1000) {
+        const poisonSide = selected.findIndex((fighter) => fighter.id === "poison");
+        const toxinPaused = poisonSide >= 0 && isAbilityPaused(balls[poisonSide], time);
+        if (game.defeatedSide === null && toxinPaused) {
+          game.lastToxinTickAt += dt;
+        } else if (game.defeatedSide === null && time - game.lastToxinTickAt >= 1000) {
           game.effects.forEach((effect, index) => {
             if (effect.toxinStacks > 0) pushDamage(index, effect.toxinStacks, balls[index].x, balls[index].y - 28);
           });
@@ -1153,12 +1410,13 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               victim.vy = 0;
               if (time >= trap.releaseAt) {
                 victim.trappedBy = null;
+                const releaseAngle = trapReleaseAngle(trap);
                 if (trap.powerRelease) {
-                  markPowerAtAngle(victim, time, trap.angle);
+                  markPowerAtAngle(victim, time, releaseAngle);
                 } else {
                   victim.powered = false;
                   victim.poweredUntil = 0;
-                  setVelocity(victim, trap.angle, trapSpitSpeed);
+                  setVelocity(victim, releaseAngle, trapSpitSpeed);
                   victim.trapPowerWindowUntil = time + 1000;
                   victim.trapSpitUntil = time + 1000;
                 }
@@ -1194,12 +1452,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         game.effects.forEach((effect, index) => {
           if (effect.activePlants !== null) effect.activePlants = game.traps.filter((trap) => trap.side === index).length;
         });
+        balls.forEach((ball) => keepBallSpeed(ball, time));
       }
 
       game.projectiles.forEach(drawProjectile);
       game.explosions = game.explosions.filter((explosion) => time - explosion.bornAt < 560);
       game.explosions.forEach((explosion) => drawExplosion(explosion, time));
       balls.filter((ball) => game.hp[ball.side] > 0).forEach(drawBall);
+      balls.filter((ball) => game.hp[ball.side] > 0).forEach((ball) => drawBaseballBat(ball, time));
       game.traps.forEach(drawTrap);
 
       if (time - game.lastHudAt > 80) {
@@ -1245,7 +1505,7 @@ function EffectPanel({ fighter, effects, side, mode }) {
   const lines = [];
   const getLiquidCooldownFrames = (transparency) => {
     const extraTransparency = Math.max(0, transparency - 30);
-    return Math.max(1.5, 3 - Math.floor(extraTransparency / 5) * 0.5);
+    return Math.max(2.5, 5 - Math.floor(extraTransparency / 5) * 0.5);
   };
   if (fighter.id === "water") {
     lines.push(`State: ${effects.liquidState}`);
@@ -1262,6 +1522,12 @@ function EffectPanel({ fighter, effects, side, mode }) {
   }
   if (fighter.id === "gravity") {
     lines.push(`Next blue mode: ${effects.nextBlueMode.toFixed(1)} sec`);
+  }
+  if (fighter.id === "baseball") {
+    lines.push(`Strikes: ${effects.strikes}/3`);
+    if (effects.swingState === "Frenzy") lines.push(`Frenzy swings: ${effects.frenzySwings}/10`);
+    lines.push(`Swing: ${effects.swingState}`);
+    lines.push(`Next swing: ${effects.nextSwing.toFixed(1)} sec`);
   }
   return (
     <div className="effect-panel">
