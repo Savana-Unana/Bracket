@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { Settings, Trophy, Users, Wifi, X, Square, Volume2, Trash2 } from "lucide-react";
+import { BarChart3, Circle, Settings, Users, Wifi, X, Square, Volume2, Trash2 } from "lucide-react";
 import "./styles.css";
 import waterLogo from "./assets/ELogos/Water-Logo.png";
 import poisonLogo from "./assets/ELogos/Toxic-Logo.png";
@@ -33,6 +33,13 @@ import teslaPlaceSfx from "./assets/ESFX/Tesla-Place.mp3";
 import teslaZapSfx from "./assets/ESFX/Tesla-Zap.mp3";
 import toxicWinSfx from "./assets/ESFX/Toxic-Win.mp3";
 import waterWinSfx from "./assets/ESFX/Water-Win.mp3";
+import defaultWinSfx from "./assets/ESFX/Default-Win.mp3";
+import fireWinSfx from "./assets/ESFX/Fire-Win.mp3";
+import iceWinSfx from "./assets/ESFX/Ice-Win.mp3";
+import electricWinSfx from "./assets/ESFX/Electric-Win.mp3";
+import airWinSfx from "./assets/ESFX/Air-Win.mp3";
+import gravityWinSfx from "./assets/ESFX/Gravity-Win.mp3";
+import baseballWinSfx from "./assets/ESFX/Baseball-Win.mp3";
 import fireChargeSfx from "./assets/ESFX/Fire-Charge.mp3";
 import fireLaunchSfx from "./assets/ESFX/Fire-Launch.mp3";
 import lifeWinSfx from "./assets/ESFX/Life-Win.mp3";
@@ -178,6 +185,41 @@ const randomFighter = {
   accent: "#111111"
 };
 
+const winSfxByFighter = {
+  air: airWinSfx,
+  baseball: baseballWinSfx,
+  electric: electricWinSfx,
+  fire: fireWinSfx,
+  gravity: gravityWinSfx,
+  ice: iceWinSfx,
+  life: lifeWinSfx,
+  poison: toxicWinSfx,
+  water: waterWinSfx
+};
+
+const leaderboardKey = "element-fight-leaderboard";
+const normalizeFightEntries = (entries) => Array.isArray(entries)
+  ? entries
+  : Array.from({ length: Number(entries) || 0 }, () => ({ opponentId: null, at: null }));
+const makeEmptyLeaderboard = () =>
+  Object.fromEntries(fighters.map((fighter) => [fighter.id, { wins: [], losses: [] }]));
+
+const readLeaderboard = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(leaderboardKey) || "{}");
+    const empty = makeEmptyLeaderboard();
+    fighters.forEach((fighter) => {
+      empty[fighter.id] = {
+        wins: normalizeFightEntries(stored[fighter.id]?.wins),
+        losses: normalizeFightEntries(stored[fighter.id]?.losses)
+      };
+    });
+    return empty;
+  } catch {
+    return makeEmptyLeaderboard();
+  }
+};
+
 function App() {
   const [screen, setScreen] = React.useState("intro");
   const [menuLeaving, setMenuLeaving] = React.useState(false);
@@ -188,6 +230,8 @@ function App() {
   const [pendingOnlineCode, setPendingOnlineCode] = React.useState("");
   const [mode, setMode] = React.useState("local");
   const [choices, setChoices] = React.useState([]);
+  const [recordGames, setRecordGames] = React.useState(false);
+  const [leaderboard, setLeaderboard] = React.useState(() => readLeaderboard());
   const [exitHoldProgress, setExitHoldProgress] = React.useState(0);
   const choicesRef = React.useRef([]);
   const screenRef = React.useRef("intro");
@@ -311,9 +355,12 @@ function App() {
           startExitHold("intro");
           return;
         }
-        if (["online-loading", "settings", "achievements"].includes(currentScreen)) {
+        if (["online-loading", "settings", "leaderboard"].includes(currentScreen)) {
           startExitHold("intro");
         }
+      }
+      if (screenRef.current === "select" && ["r", "R"].includes(event.key) && !event.repeat) {
+        setRecordGames((current) => !current);
       }
       if (screenRef.current === "select" && choicesRef.current.length === 2 && ["Enter", " ", "z", "Z"].includes(event.key)) {
         setScreen("battle");
@@ -334,7 +381,30 @@ function App() {
   const clearData = () => {
     localStorage.clear();
     setTargetCode("");
+    setLeaderboard(makeEmptyLeaderboard());
+    setRecordGames(false);
   };
+
+  const recordResult = React.useCallback((winner, loser) => {
+    setLeaderboard((current) => {
+      const next = { ...current };
+      const at = Date.now();
+      const winnerRecord = next[winner.id] || { wins: [], losses: [] };
+      const loserRecord = next[loser.id] || { wins: [], losses: [] };
+      next[winner.id] = {
+        ...winnerRecord,
+        wins: [...normalizeFightEntries(winnerRecord.wins), { opponentId: loser.id, at }],
+        losses: normalizeFightEntries(winnerRecord.losses)
+      };
+      next[loser.id] = {
+        ...loserRecord,
+        wins: normalizeFightEntries(loserRecord.wins),
+        losses: [...normalizeFightEntries(loserRecord.losses), { opponentId: winner.id, at }]
+      };
+      localStorage.setItem(leaderboardKey, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   return (
     <main className="page">
@@ -361,7 +431,7 @@ function App() {
             exitHoldProgress={exitHoldProgress}
           />
         )}
-        {screen === "achievements" && <Achievements back={() => setScreen("intro")} exitHoldProgress={exitHoldProgress} />}
+        {screen === "leaderboard" && <Leaderboard back={() => setScreen("intro")} exitHoldProgress={exitHoldProgress} leaderboard={leaderboard} setLeaderboard={setLeaderboard} />}
         {screen === "online-loading" && <OnlineLoading back={() => setScreen("intro")} hasCode={Boolean(pendingOnlineCode)} exitHoldProgress={exitHoldProgress} />}
         {screen === "select" && (
           <CharacterSelect
@@ -373,6 +443,8 @@ function App() {
             setModifiers={setModifiers}
             modOpen={modOpen}
             setModOpen={setModOpen}
+            recordGames={recordGames}
+            setRecordGames={setRecordGames}
             exitHoldProgress={exitHoldProgress}
           />
         )}
@@ -382,6 +454,8 @@ function App() {
             modifiers={modifiers}
             settings={settings}
             mode={mode}
+            recordGames={recordGames}
+            onRecordedResult={recordResult}
             back={() => setScreen("select")}
             exitHoldProgress={exitHoldProgress}
           />
@@ -411,8 +485,8 @@ function Intro({ code, targetCode, setTargetCode, launchSelect, setScreen, leavi
           <button className="primary action-right" onClick={() => launchSelect("online")}>
             <Wifi size={21} /> Online Game
           </button>
-          <button className="primary action-left" onClick={() => setScreen("achievements")}>
-            <Trophy size={21} /> Achievements
+          <button className="primary action-left" onClick={() => setScreen("leaderboard")}>
+            <BarChart3 size={21} /> Leaderboard
           </button>
           <button className="primary action-right" onClick={() => setScreen("settings")}>
             <Settings size={21} /> Settings
@@ -435,7 +509,7 @@ function CornerBack({ onBack, holdProgress = 0 }) {
   );
 }
 
-function CharacterSelect({ mode, choices, chooseFighter, setScreen, modifiers, setModifiers, modOpen, setModOpen, exitHoldProgress }) {
+function CharacterSelect({ mode, choices, chooseFighter, setScreen, modifiers, setModifiers, modOpen, setModOpen, recordGames, setRecordGames, exitHoldProgress }) {
   const nextPlayer = mode === "online" ? "Player 1" : `Player ${Math.min(choices.length + 1, 2)}`;
   const ready = choices.length === 2;
   const roster = [...fighters, randomFighter];
@@ -449,6 +523,15 @@ function CharacterSelect({ mode, choices, chooseFighter, setScreen, modifiers, s
           </button>
         </div>
       )}
+      <div className="corner-wrap corner-record-wrap">
+        <button
+          className={`corner corner-record ${recordGames ? "recording" : ""}`}
+          onClick={() => setRecordGames((current) => !current)}
+          aria-label={recordGames ? "recorded games on" : "recorded games off"}
+        >
+          <Circle size={20} fill={recordGames ? "#ef3434" : "transparent"} />
+        </button>
+      </div>
       <h2>{ready ? "Ready?" : `Select Your Character ${nextPlayer}`}</h2>
       <div className="versus-layout">
         <FighterPedestal label="Player 1" fighter={choices[0]} side="left" />
@@ -547,8 +630,9 @@ function ModifierDrawer({ open, close, modifiers, setModifiers }) {
   );
 }
 
-function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldProgress }) {
+function Battle({ fighters: selected, modifiers, settings, mode, recordGames, onRecordedResult, back, exitHoldProgress }) {
   const canvasRef = React.useRef(null);
+  const resultRecordedRef = React.useRef(false);
   const activeSfxRef = React.useRef(new Set());
   const activeSfxScalesRef = React.useRef(new Map());
   const stopSfx = React.useCallback((audio) => {
@@ -990,9 +1074,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         ball.fireChargeAudio = null;
       });
       balls.forEach(stopBaseballSfx);
-      if (selected[game.winner].id === "poison") playSfx(toxicWinSfx);
-      if (selected[game.winner].id === "water") playSfx(waterWinSfx);
-      if (selected[game.winner].id === "life") playSfx(lifeWinSfx);
+      playSfx(winSfxByFighter[selected[game.winner].id] || defaultWinSfx);
+      if (recordGames && !resultRecordedRef.current) {
+        resultRecordedRef.current = true;
+        onRecordedResult(selected[game.winner], selected[side]);
+      }
 
       const defeatedBall = balls[side];
       addExplosion(defeatedBall.x, defeatedBall.y, defeatedBall.fighter.hue, 1.8);
@@ -2262,7 +2348,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       balls.forEach((ball) => stopSfx(ball.fireChargeAudio));
       balls.forEach(stopBaseballSfx);
     };
-  }, [selected, modifiers, state.countdown, maxHp, playSfx, stopSfx]);
+  }, [selected, modifiers, state.countdown, maxHp, playSfx, stopSfx, recordGames, onRecordedResult]);
 
   return (
     <section className="battle-screen">
@@ -2358,16 +2444,116 @@ function OnlineLoading({ back, hasCode, exitHoldProgress }) {
   );
 }
 
-function Achievements({ back, exitHoldProgress }) {
+function Leaderboard({ back, exitHoldProgress, leaderboard, setLeaderboard }) {
+  const persistLeaderboard = React.useCallback((updater) => {
+    setLeaderboard((current) => {
+      const next = updater(current);
+      localStorage.setItem(leaderboardKey, JSON.stringify(next));
+      return next;
+    });
+  }, [setLeaderboard]);
+  const ranked = React.useMemo(() => [...fighters].sort((left, right) => {
+    const leftRecord = leaderboard[left.id] || { wins: [], losses: [] };
+    const rightRecord = leaderboard[right.id] || { wins: [], losses: [] };
+    const leftWins = normalizeFightEntries(leftRecord.wins);
+    const rightWins = normalizeFightEntries(rightRecord.wins);
+    const leftPoints = leftWins.length - normalizeFightEntries(leftRecord.losses).length;
+    const rightPoints = rightWins.length - normalizeFightEntries(rightRecord.losses).length;
+    if (rightPoints !== leftPoints) return rightPoints - leftPoints;
+    if (rightWins.length !== leftWins.length) return rightWins.length - leftWins.length;
+    return left.name.localeCompare(right.name);
+  }), [leaderboard]);
+  const [selectedId, setSelectedId] = React.useState(ranked[0]?.id);
+  const selectedFighter = fighters.find((fighter) => fighter.id === selectedId) || ranked[0];
+  const selectedRecord = leaderboard[selectedFighter.id] || { wins: [], losses: [] };
+  const selectedWins = normalizeFightEntries(selectedRecord.wins);
+  const selectedLosses = normalizeFightEntries(selectedRecord.losses);
+
+  React.useEffect(() => {
+    const onKey = (event) => {
+      if (!selectedFighter || event.repeat) return;
+      if (!["u", "U", "l", "L", "r", "R"].includes(event.key)) return;
+      event.preventDefault();
+      persistLeaderboard((current) => {
+        const next = { ...current };
+        const selectedRecord = next[selectedFighter.id] || { wins: [], losses: [] };
+        if (["u", "U"].includes(event.key)) {
+          next[selectedFighter.id] = {
+            ...selectedRecord,
+            wins: [...normalizeFightEntries(selectedRecord.wins), { opponentId: null, at: Date.now(), manual: true }],
+            losses: normalizeFightEntries(selectedRecord.losses)
+          };
+        }
+        if (["l", "L"].includes(event.key)) {
+          next[selectedFighter.id] = {
+            ...selectedRecord,
+            wins: normalizeFightEntries(selectedRecord.wins).slice(0, -1),
+            losses: normalizeFightEntries(selectedRecord.losses)
+          };
+        }
+        if (["r", "R"].includes(event.key)) {
+          fighters.forEach((fighter) => {
+            const record = next[fighter.id] || { wins: [], losses: [] };
+            next[fighter.id] = fighter.id === selectedFighter.id
+              ? { wins: [], losses: [] }
+              : {
+                wins: normalizeFightEntries(record.wins).filter((win) => win.opponentId !== selectedFighter.id),
+                losses: normalizeFightEntries(record.losses).filter((loss) => loss.opponentId !== selectedFighter.id)
+              };
+          });
+        }
+        return next;
+      });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [persistLeaderboard, selectedFighter]);
+
   return (
     <section className="simple-panel">
       <CornerBack onBack={back} holdProgress={exitHoldProgress} />
-      <Trophy size={48} />
-      <h2>Achievements</h2>
-      <div className="achievement-list">
-        <span>First Splash</span>
-        <span>Toxin Trouble</span>
-        <span>Garden Wall</span>
+      <h2>Leaderboard</h2>
+      <div className="leaderboard-list">
+        {ranked.map((fighter, index) => {
+          const record = leaderboard[fighter.id] || { wins: [], losses: [] };
+          const points = normalizeFightEntries(record.wins).length - normalizeFightEntries(record.losses).length;
+          return (
+            <button
+              key={fighter.id}
+              className={`leaderboard-row ${selectedFighter.id === fighter.id ? "active" : ""}`}
+              onClick={() => setSelectedId(fighter.id)}
+              style={{ "--hue": fighter.hue, "--accent": fighter.accent }}
+            >
+              <span className="rank">{index + 1}</span>
+              <span className="mini-logo">{fighter.logo ? <img src={fighter.logo} alt="" /> : fighter.short}</span>
+              <strong>{fighter.name}</strong>
+              <b>{points} pts</b>
+            </button>
+          );
+        })}
+      </div>
+      <div className="leaderboard-detail">
+        <div className="leaderboard-summary">
+          <strong>{selectedFighter.name}</strong>
+          <span>Wins: {selectedWins.length}</span>
+          <span>Losses: {selectedLosses.length}</span>
+        </div>
+        <div className="fight-lists">
+          <div className="fight-list">
+            <strong>Wins</strong>
+            {selectedWins.length ? selectedWins.map((win, index) => {
+              const opponent = fighters.find((fighter) => fighter.id === win.opponentId);
+              return <span key={`${win.at || "legacy-win"}-${index}`}>Win #{index + 1}: {opponent?.name || "Unknown Opponent"}</span>;
+            }) : <span>No recorded wins</span>}
+          </div>
+          <div className="fight-list">
+            <strong>Losses</strong>
+            {selectedLosses.length ? selectedLosses.map((loss, index) => {
+              const opponent = fighters.find((fighter) => fighter.id === loss.opponentId);
+              return <span key={`${loss.at || "legacy-loss"}-${index}`}>Loss #{index + 1}: {opponent?.name || "Unknown Opponent"}</span>;
+            }) : <span>No recorded losses</span>}
+          </div>
+        </div>
       </div>
     </section>
   );
