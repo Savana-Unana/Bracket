@@ -4,16 +4,16 @@ import { BarChart3, Circle, Settings, Users, Wifi, X, Square, Volume2, Trash2 } 
 import "./styles.css";
 import waterLogo from "./assets/ELogos/Water-Logo.png";
 import poisonLogo from "./assets/ELogos/Toxic-Logo.png";
-import lifeLogo from "./assets/ELogos/Plant-Logo.png";
+import lifeLogo from "./assets/ELogos/Life-Logo.png";
 import moonLogo from "./assets/ELogos/Moon-Logo.png";
 import gravityLogo from "./assets/ELogos/Gravity-Logo.png";
 import baseballLogo from "./assets/ELogos/Baseball-Logo.png";
 import waterSkin from "./assets/ESkins/Water-Normal.png";
 import poisonSkin from "./assets/ESkins/Toxic-Normal.png";
-import lifeSkin from "./assets/ESkins/Plant-Normal.png";
+import lifeSkin from "./assets/ESkins/Life-Normal.png";
 import waterHurtSkin from "./assets/ESkins/Water-Hurt.png";
 import poisonHurtSkin from "./assets/ESkins/Toxic-Hurt.png";
-import lifeHurtSkin from "./assets/ESkins/Plant-Hurt.png";
+import lifeHurtSkin from "./assets/ESkins/Life-Hurt.png";
 import syringeAsset from "./assets/EAttack/Syringe.png";
 import flytrapIdleAsset from "./assets/EAttack/Flytrap-Idle.png";
 import flytrapAttack1Asset from "./assets/EAttack/Flytrap-Attack1.png";
@@ -23,7 +23,7 @@ import baseballBatAsset from "./assets/EAttack/Basebat.png";
 import teslaAsset from "./assets/EAttack/Tesla.png";
 import duringLiquidSfx from "./assets/ESFX/During-Liquid.mp3";
 import flytrapChompSfx from "./assets/ESFX/Flytrap-Chomp.mp3";
-import flytrapPlantSfx from "./assets/ESFX/Flytrap-Plant.mp3";
+import flytrapLifeSfx from "./assets/ESFX/Flytrap-Life.mp3";
 import frostShatterSfx from "./assets/ESFX/Frost-Shatter.mp3";
 import hitSfx from "./assets/ESFX/Hit.mp3";
 import honkSfx from "./assets/ESFX/Honk.mp3";
@@ -48,6 +48,9 @@ import baseballSwingSfx from "./assets/ESFX/Baseball-Swing.mp3";
 import baseballHitSfx from "./assets/ESFX/Baseball-Hit.mp3";
 import airrowAppearSfx from "./assets/ESFX/Airrow-Appear.mp3";
 import airSlamSfx from "./assets/ESFX/Air-Slam.mp3";
+import blindfoldAsset from "./assets/EAccessories/Blindfold.png";
+import capAsset from "./assets/EAccessories/Cap.png";
+import scienceHairAsset from "./assets/EAccessories/ScienceHair.png";
 
 const randomCode = () =>
   Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
@@ -95,7 +98,7 @@ const fighters = [
     skin: lifeSkin,
     hurtSkin: lifeHurtSkin,
     hp: 100,
-    weight: 1.2,
+    weight: 1.1,
     damage: 1,
     stats: { Overgrowth: "0 growths" },
     abilities: ["Overgrowth"]
@@ -107,7 +110,7 @@ const fighters = [
     hue: "#f97316",
     accent: "#ffe08a",
     hp: 100,
-    weight: 1.05,
+    weight: 1.1,
     damage: 1,
     stats: {},
     abilities: ["Overload"]
@@ -119,7 +122,7 @@ const fighters = [
     hue: "#8de7ff",
     accent: "#eefcff",
     hp: 100,
-    weight: 1.08,
+    weight: 1.1,
     damage: 1,
     stats: {},
     abilities: ["Slippery", "Sharp Shoot"]
@@ -131,7 +134,7 @@ const fighters = [
     hue: "#facc15",
     accent: "#fff7ad",
     hp: 100,
-    weight: 1,
+    weight: 1.1,
     damage: 1,
     stats: {},
     abilities: ["Tesla Web"]
@@ -143,7 +146,7 @@ const fighters = [
     hue: "#4f8cff",
     accent: "#d9e7ff",
     hp: 100,
-    weight: 1.15,
+    weight: 1.1,
     damage: 1,
     stats: {},
     abilities: ["Blue Mode"]
@@ -156,7 +159,7 @@ const fighters = [
     accent: "#d6d9df",
     logo: gravityLogo,
     hp: 100,
-    weight: 1.15,
+    weight: 1.1,
     damage: 1,
     stats: {},
     abilities: ["Moon Lock"]
@@ -558,6 +561,11 @@ function CharacterSelect({ mode, choices, chooseFighter, setScreen, modifiers, s
 }
 
 function FighterPedestal({ label, fighter, side }) {
+  const accessoryByFighter = {
+    water: blindfoldAsset,
+    electric: scienceHairAsset,
+    baseball: capAsset
+  };
   return (
     <div className={`pedestal-wrap ${side}`}>
       <span className="player-label">{label}</span>
@@ -566,6 +574,7 @@ function FighterPedestal({ label, fighter, side }) {
           <>
             <div className="ball-skin" style={{ "--hue": fighter.hue, "--accent": fighter.accent }}>
               {fighter.skin && <img src={fighter.skin} alt="" />}
+              {accessoryByFighter[fighter.id] && <img className={`preview-accessory ${fighter.id}`} src={accessoryByFighter[fighter.id]} alt="" />}
             </div>
             <strong>{fighter.name}</strong>
             <dl>
@@ -687,9 +696,9 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       antiVirusRequired: 5,
       toxinDamageOutput: fighter.id === "poison" ? 0 : null,
       nextSyringe: fighter.id === "poison" ? 3 : null,
-      activePlants: fighter.id === "life" ? 0 : null,
-      plantChomps: fighter.id === "life" ? 0 : null,
-      maxPlants: fighter.id === "life" ? 5 : null,
+      activeGrowths: fighter.id === "life" ? 0 : null,
+      lifeChomps: fighter.id === "life" ? 0 : null,
+      maxGrowths: fighter.id === "life" ? 5 : null,
       nextBlueMode: fighter.id === "air" ? 5 : null,
       nextIcicle: fighter.id === "ice" ? 2 : null,
       iciclesLanded: fighter.id === "ice" ? 0 : null,
@@ -738,6 +747,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
     const moonImage = makeImage(moonLogo);
     const baseballBatImage = makeImage(baseballBatAsset);
     const teslaImage = makeImage(teslaAsset);
+    const accessoryImages = {
+      water: makeImage(blindfoldAsset),
+      electric: makeImage(scienceHairAsset),
+      baseball: makeImage(capAsset)
+    };
     const trapImages = [
       makeImage(flytrapIdleAsset),
       makeImage(flytrapAttack1Asset),
@@ -754,9 +768,9 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         antiVirusRequired: 5,
         toxinDamageOutput: fighter.id === "poison" ? 0 : null,
         nextSyringe: fighter.id === "poison" ? 3 : null,
-        activePlants: fighter.id === "life" ? 0 : null,
-        plantChomps: fighter.id === "life" ? 0 : null,
-        maxPlants: fighter.id === "life" ? 5 : null,
+        activeGrowths: fighter.id === "life" ? 0 : null,
+        lifeChomps: fighter.id === "life" ? 0 : null,
+        maxGrowths: fighter.id === "life" ? 5 : null,
         nextBlueMode: fighter.id === "air" ? 5 : null,
         nextIcicle: fighter.id === "ice" ? 2 : null,
         iciclesLanded: fighter.id === "ice" ? 0 : null,
@@ -859,7 +873,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
           offset: moonIndex * Math.PI,
           orbitStartedAt: now,
           leftHome: false,
-          lastHitAt: 0
+          lastHitAt: 0,
+          inLiquid: false,
+          defrostUntil: 0,
+          lastIcicleHitAt: 0,
+          batReflected: false
         })) : [],
         stunnedUntil: 0,
         hurtUntil: 0
@@ -984,6 +1002,47 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       const enemyToBaseballAngle = Math.atan2(ball.y - target.y, ball.x - target.x);
       return enemyToBaseballAngle + (Math.PI * 2) / 3;
     };
+    const isObjectInBatArc = (ball, object, swingAngle, swingRange) => {
+      const dx = object.x - ball.x;
+      const dy = object.y - ball.y;
+      const alongBat = dx * Math.cos(swingAngle) + dy * Math.sin(swingAngle);
+      const offBatCenter = Math.abs(dx * Math.sin(swingAngle) - dy * Math.cos(swingAngle));
+      return alongBat >= 0 && alongBat <= swingRange && offBatCenter <= (object.r || 10) + ball.r * 0.18;
+    };
+    const getLaunchedMoons = () => balls.flatMap((owner) =>
+      owner.moons.map((moon) => ({ owner, moon })).filter(({ moon }) => moon.state === "launched")
+    );
+    const reflectMoonTowardOwner = (moon, owner, hitter, time) => {
+      const angle = Math.atan2(owner.y - moon.y, owner.x - moon.x);
+      moon.vx = Math.cos(angle) * powerSpeed;
+      moon.vy = Math.sin(angle) * powerSpeed;
+      moon.batReflected = true;
+      moon.leftHome = true;
+      moon.lastHitAt = time;
+      playSfx(baseballHitSfx, 0.8);
+      if (!hitter.swing || hitter.swing.swung) return;
+      hitter.swing.resumeAngle = Math.atan2(hitter.y - owner.y, hitter.x - owner.x);
+    };
+    const reflectProjectileTowardOwner = (projectile, hitter, time) => {
+      const owner = balls[projectile.side];
+      if (!owner) return;
+      const angle = Math.atan2(owner.y - projectile.y, owner.x - projectile.x);
+      const speed = powerSpeed;
+      projectile.target = projectile.side;
+      projectile.side = hitter.side;
+      projectile.reflected = true;
+      projectile.angle = angle;
+      projectile.bornAt = time;
+      projectile.startSpeed = speed;
+      projectile.topSpeed = speed;
+      projectile.rampMs = 1;
+      projectile.vx = Math.cos(angle) * speed;
+      projectile.vy = Math.sin(angle) * speed;
+      projectile.baseVx = projectile.vx;
+      projectile.baseVy = projectile.vy;
+      projectile.inLiquid = false;
+      playSfx(baseballHitSfx, 0.75);
+    };
     const nudgeDirection = (moving) => {
       const speed = Math.hypot(moving.vx, moving.vy) || 1;
       const angle = Math.atan2(moving.vy, moving.vx) + (Math.random() - 0.5) * 1.15;
@@ -1004,7 +1063,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       const extraTransparency = Math.max(0, transparency - 30);
       return Math.max(2.5, 5 - Math.floor(extraTransparency / 5) * 0.5);
     };
-    const getPlantMax = (chomps) => 5 + Math.floor(chomps / 5);
+    const getLifeMax = (chomps) => 5 + Math.floor(chomps / 5);
     const getWallDistance = (ball, angle) => {
       const dx = Math.cos(angle);
       const dy = Math.sin(angle);
@@ -1262,6 +1321,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       if (game.hp[ball.side] <= 0 || game.hp[enemy.side] <= 0) return;
       const paused = isAbilityPaused(ball, time);
       const orbitDuration = Math.PI * 2 * moonOrbitSpeedMs;
+      const activeLiquidBall = balls.find((candidate) => game.effects[candidate.side].liquidState === "Water");
       const collideMoonWithEnemy = (moon, x, y, damage, movableMoon) => {
         if (Math.hypot(enemy.x - x, enemy.y - y) >= enemy.r + moonRadius) return;
         const hitAngle = Math.atan2(y - enemy.y, x - enemy.x);
@@ -1292,41 +1352,90 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       const moonRadius = ball.r * 0.34;
       getMoonPositions(ball, time).forEach((position, index) => {
         const moon = ball.moons[index];
+        const touchingLiquid = activeLiquidBall && Math.hypot(position.x - activeLiquidBall.x, position.y - activeLiquidBall.y) < activeLiquidBall.r + moonRadius;
+        if (moon.state === "orbit" && touchingLiquid) {
+          const angle = Math.random() * Math.PI * 2;
+          moon.state = "launched";
+          moon.x = position.x;
+          moon.y = position.y;
+          moon.vx = Math.cos(angle) * moonSpeed;
+          moon.vy = Math.sin(angle) * moonSpeed;
+          moon.leftHome = true;
+          moon.r = moonRadius;
+          moon.inLiquid = true;
+          return;
+        }
         if (moon.state === "orbit") collideMoonWithEnemy(moon, position.x, position.y, 1, false);
         if (moon.state === "orbit" && time - moon.orbitStartedAt >= orbitDuration) launchGravityMoon(ball, moon, position);
       });
       ball.moons.forEach((moon) => {
         if (moon.state !== "launched") return;
-        moon.x += moon.vx;
-        moon.y += moon.vy;
+        const moonSpeedMultiplier = time < moon.defrostUntil ? 0.45 : 1;
+        moon.x += moon.vx * moonSpeedMultiplier;
+        moon.y += moon.vy * moonSpeedMultiplier;
+        let touchedWall = false;
         if (moon.x < moonRadius) {
           moon.x = moonRadius;
           moon.vx = Math.abs(moon.vx);
+          touchedWall = true;
         }
         if (moon.x > box.w - moonRadius) {
           moon.x = box.w - moonRadius;
           moon.vx = -Math.abs(moon.vx);
+          touchedWall = true;
         }
         if (moon.y < moonRadius) {
           moon.y = moonRadius;
           moon.vy = Math.abs(moon.vy);
+          touchedWall = true;
         }
         if (moon.y > box.h - moonRadius) {
           moon.y = box.h - moonRadius;
           moon.vy = -Math.abs(moon.vy);
+          touchedWall = true;
+        }
+        if (touchedWall && moon.batReflected) {
+          moon.batReflected = false;
+          const speed = Math.hypot(moon.vx, moon.vy) || 1;
+          moon.vx = (moon.vx / speed) * moonSpeed;
+          moon.vy = (moon.vy / speed) * moonSpeed;
+        }
+
+        const touchingLiquid = activeLiquidBall && Math.hypot(moon.x - activeLiquidBall.x, moon.y - activeLiquidBall.y) < activeLiquidBall.r + moonRadius;
+        if (touchingLiquid) {
+          moon.inLiquid = true;
+          const liquidMoonSpeed = (moon.batReflected ? powerSpeed : moonSpeed) * 0.8;
+          const speed = Math.hypot(moon.vx, moon.vy) || 1;
+          moon.vx = (moon.vx / speed) * liquidMoonSpeed;
+          moon.vy = (moon.vy / speed) * liquidMoonSpeed;
+        } else if (moon.inLiquid) {
+          nudgeDirection(moon);
+          moon.inLiquid = false;
+        }
+
+        if (moon.batReflected && Math.hypot(moon.x - ball.x, moon.y - ball.y) < ball.r + moonRadius) {
+          pushDamage(ball.side, 3, ball.x, ball.y);
+          returnMoonToOrbit(moon, ball, time);
+          return;
+        }
+        const baseballEnemy = enemy.fighter.id === "baseball" ? enemy : null;
+        if (moon.batReflected && baseballEnemy && Math.hypot(moon.x - baseballEnemy.x, moon.y - baseballEnemy.y) < baseballEnemy.r + moonRadius) {
+          if (!baseballEnemy.swing) startBaseballFrenzySwing(baseballEnemy, time);
+          reflectMoonTowardOwner(moon, ball, baseballEnemy, time);
         }
 
         const distanceFromGravity = Math.hypot(moon.x - ball.x, moon.y - ball.y);
         if (distanceFromGravity > ball.r * 2.4) moon.leftHome = true;
-        if (moon.leftHome && distanceFromGravity < ball.r * 1.55) {
+        if (!moon.batReflected && moon.leftHome && distanceFromGravity < ball.r * 1.55) {
           returnMoonToOrbit(moon, ball, time);
           return;
         }
 
         const speed = Math.hypot(moon.vx, moon.vy) || 1;
-        moon.vx = (moon.vx / speed) * moonSpeed;
-        moon.vy = (moon.vy / speed) * moonSpeed;
-        collideMoonWithEnemy(moon, moon.x, moon.y, 3, true);
+        const targetMoonSpeed = moon.batReflected ? powerSpeed : moonSpeed;
+        moon.vx = (moon.vx / speed) * targetMoonSpeed;
+        moon.vy = (moon.vy / speed) * targetMoonSpeed;
+        if (!moon.batReflected) collideMoonWithEnemy(moon, moon.x, moon.y, 3, true);
       });
       game.effects[ball.side].moonMode = ball.moons.some((moon) => moon.state === "launched") ? "Launched" : "Orbiting";
       game.effects[ball.side].moonStates = ball.moons.map((moon) => moon.state === "launched" ? "Launched" : "Orbiting");
@@ -1398,9 +1507,21 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       const alongBat = dx * Math.cos(swingAngle) + dy * Math.sin(swingAngle);
       const offBatCenter = Math.abs(dx * Math.sin(swingAngle) - dy * Math.cos(swingAngle));
       const hit = game.hp[target.side] > 0 && alongBat >= 0 && alongBat <= swingRange && offBatCenter <= target.r;
+      let reflectedObjects = 0;
 
       stopSfx(ball.baseballChargeAudio);
       ball.baseballChargeAudio = null;
+      getLaunchedMoons().forEach(({ owner, moon }) => {
+        if (owner.side === ball.side || !isObjectInBatArc(ball, moon, swingAngle, swingRange)) return;
+        reflectMoonTowardOwner(moon, owner, ball, time);
+        reflectedObjects += 1;
+      });
+      game.projectiles.forEach((projectile) => {
+        if (!["icicle", "syringe"].includes(projectile.type)) return;
+        if (projectile.side === ball.side || !isObjectInBatArc(ball, { ...projectile, r: 10 }, swingAngle, swingRange)) return;
+        reflectProjectileTowardOwner(projectile, ball, time);
+        reflectedObjects += 1;
+      });
       if (hit) {
         stopSfx(ball.baseballSwingAudio);
         ball.baseballSwingAudio = null;
@@ -1412,6 +1533,9 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
           if (game.hp[target.side] > 0) markPowerAtAngle(target, time, swingAngle);
           game.effects[ball.side].strikes = 0;
         }
+      } else if (reflectedObjects > 0) {
+        stopSfx(ball.baseballSwingAudio);
+        ball.baseballSwingAudio = null;
       } else if (!ball.swing.frenzy) {
         ball.baseballSwingAudio = playSfx(baseballSwingSfx, 0.75, { maxDurationMs: 160 });
         game.effects[ball.side].strikes = Math.min(3, (game.effects[ball.side].strikes ?? 0) + 1);
@@ -1478,11 +1602,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       const existing = game.traps.some((trap) => Math.hypot(trap.x - x, trap.y - y) < 68);
       if (existing) return;
       const activeSideTraps = game.traps.filter((trap) => trap.side === side);
-      const maxPlants = game.effects[side].maxPlants ?? 5;
-      if (activeSideTraps.length >= maxPlants) return;
+      const maxGrowths = game.effects[side].maxGrowths ?? 5;
+      if (activeSideTraps.length >= maxGrowths) return;
       game.traps.push({ id: `${performance.now()}-${side}-${game.traps.length}`, side, x, y, angle, closed: false, victimSide: null, releaseAt: 0, powerRelease: false });
-      playSfx(flytrapPlantSfx);
-      if (game.effects[side].activePlants !== null) game.effects[side].activePlants = activeSideTraps.length + 1;
+      playSfx(flytrapLifeSfx);
+      if (game.effects[side].activeGrowths !== null) game.effects[side].activeGrowths = activeSideTraps.length + 1;
     };
     const harshKnock = (ball, angle) => {
       setVelocity(ball, angle, trapSpitSpeed);
@@ -1550,6 +1674,47 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         ball.defrostOwnerSide = null;
       });
     };
+    const drawClippedAccessory = (ball, image, xOffset, yOffset, widthScale, heightScale) => {
+      if (!image?.complete || !image.naturalWidth) return;
+      const width = ball.r * widthScale;
+      const height = ball.r * heightScale;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(image, ball.x + ball.r * xOffset - width / 2, ball.y + ball.r * yOffset - height / 2, width, height);
+      ctx.restore();
+    };
+    const drawAccessory = (ball, image, xOffset, yOffset, widthScale, heightScale) => {
+      if (!image?.complete || !image.naturalWidth) return;
+      const width = ball.r * widthScale;
+      const height = ball.r * heightScale;
+      ctx.drawImage(image, ball.x + ball.r * xOffset - width / 2, ball.y + ball.r * yOffset - height / 2, width, height);
+    };
+    const drawBallAccessory = (ball) => {
+      if (ball.fighter.id === "water") {
+        drawClippedAccessory(ball, accessoryImages.water, 0, -0.23, 2.15, 0.86);
+      }
+      if (ball.fighter.id === "electric") {
+        drawAccessory(ball, accessoryImages.electric, 0, -0.68, 2.86, 1.66);
+      }
+      if (ball.fighter.id === "baseball") {
+        drawAccessory(ball, accessoryImages.baseball, 0.2, -0.68, 2.1, 1.28);
+      }
+    };
+    const drawPoisonSyringeCue = (ball, time) => {
+      if (ball.fighter.id !== "poison" || !syringeImage.complete || !syringeImage.naturalWidth) return;
+      if (game.defeatedSide !== null || game.hp[ball.side] <= 0) return;
+      const cueStartsAt = game.nextSyringeAt[ball.side] - cooldown + 2000;
+      if (time < cueStartsAt || time >= game.nextSyringeAt[ball.side]) return;
+      const height = ball.r * 0.9;
+      const width = height * (syringeImage.naturalWidth / syringeImage.naturalHeight);
+      ctx.save();
+      ctx.translate(ball.x + ball.r * 0.62, ball.y + ball.r * 0.58);
+      ctx.rotate((135 * Math.PI) / 180);
+      ctx.drawImage(syringeImage, -width / 2, -height / 2, width, height);
+      ctx.restore();
+    };
     const drawBall = (ball) => {
       const effect = game.effects[ball.side];
       ctx.globalAlpha = effect.transparency !== null ? Math.max(0.18, 1 - effect.transparency / 100) : 1;
@@ -1584,9 +1749,11 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         ctx.fill();
         ctx.restore();
       }
+      drawBallAccessory(ball);
+      drawPoisonSyringeCue(ball, performance.now());
       ctx.globalAlpha = 1;
       ctx.fillStyle = "#111";
-      ctx.font = "800 15px Inter, system-ui, sans-serif";
+      ctx.font = "800 17.25px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
       ctx.fillText(`HP: ${game.hp[ball.side]}`, ball.x, ball.y - ball.r - 8);
@@ -1599,7 +1766,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       const angle = ball.swing.swung
         ? ball.swing.batStartAngle + swingProgress * Math.PI
         : getBaseballBatAngle(ball);
-      const batLength = ball.r * 2.8;
+      const batLength = ball.r * 3.36;
       const batWidth = ball.r * 3.44;
 
       ctx.save();
@@ -1808,6 +1975,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
             ctx.arc(0, 0, ball.r * 0.34, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
+          }
+          if (time < moon.defrostUntil) {
+            ctx.globalAlpha = 0.32;
+            ctx.fillStyle = "#82f4ff";
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
           }
           ctx.restore();
         });
@@ -2200,8 +2375,22 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
           }
           projectile.x += projectile.vx;
           projectile.y += projectile.vy;
+          if (projectile.x <= 0 || projectile.x >= box.w || projectile.y <= 0 || projectile.y >= box.h) return false;
           const target = balls[projectile.target];
           if (game.defeatedSide !== null || game.hp[projectile.side] <= 0 || game.hp[projectile.target] <= 0) return false;
+          if (projectile.type === "icicle") {
+            balls.forEach((gravityBall) => {
+              if (gravityBall.fighter.id !== "gravity" || game.hp[gravityBall.side] <= 0) return;
+              getMoonPositions(gravityBall, time).forEach((moonPosition, index) => {
+                const moon = gravityBall.moons[index];
+                const radius = moon.r || gravityBall.r * 0.34;
+                if (Math.hypot(projectile.x - moonPosition.x, projectile.y - moonPosition.y) >= radius + 8) return;
+                if (time - moon.lastIcicleHitAt < 350) return;
+                moon.defrostUntil = time + 2000;
+                moon.lastIcicleHitAt = time;
+              });
+            });
+          }
           const projectileTouchingLiquid = game.effects[projectile.target].liquidState === "Water" && Math.hypot(projectile.x - target.x, projectile.y - target.y) < target.r + 8;
           if (projectileTouchingLiquid) {
             if (!projectile.inLiquid) {
@@ -2296,9 +2485,9 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
           if (game.defeatedSide === null && game.hp[trap.side] > 0 && game.hp[enemy.side] > 0 && Math.hypot(trap.x - enemy.x, trap.y - enemy.y) < enemy.r + centerHitboxRadius) {
             trap.closed = true;
             playSfx(flytrapChompSfx);
-            if (game.effects[trap.side].plantChomps !== null) {
-              game.effects[trap.side].plantChomps += 1;
-              game.effects[trap.side].maxPlants = getPlantMax(game.effects[trap.side].plantChomps);
+            if (game.effects[trap.side].lifeChomps !== null) {
+              game.effects[trap.side].lifeChomps += 1;
+              game.effects[trap.side].maxGrowths = getLifeMax(game.effects[trap.side].lifeChomps);
             }
             trap.victimSide = enemy.side;
             trap.powerRelease = enemy.trapPowerWindowUntil >= time;
@@ -2315,7 +2504,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         });
         game.traps = game.traps.filter((trap) => !trap.closedAt || time - trap.closedAt < 420);
         game.effects.forEach((effect, index) => {
-          if (effect.activePlants !== null) effect.activePlants = game.traps.filter((trap) => trap.side === index).length;
+          if (effect.activeGrowths !== null) effect.activeGrowths = game.traps.filter((trap) => trap.side === index).length;
         });
         balls.forEach((ball) => keepBallSpeed(ball, time));
       }
@@ -2400,8 +2589,8 @@ function EffectPanel({ fighter, effects, side, mode }) {
     lines.push(`Defrosting: ${effects.defrostTime.toFixed(1)} sec`);
   }
   if (fighter.id === "life") {
-    lines.push(`Growths: ${effects.activePlants}/${effects.maxPlants}`);
-    lines.push(`Chomps Until Upgrade: ${effects.plantChomps % 5}/5`);
+    lines.push(`Growths: ${effects.activeGrowths}/${effects.maxGrowths}`);
+    lines.push(`Chomps Until Upgrade: ${effects.lifeChomps % 5}/5`);
   }
   if (fighter.id === "ice") {
     lines.push(`Next icicle: ${effects.nextIcicle.toFixed(1)} sec`);
@@ -2597,3 +2786,4 @@ createRoot(document.getElementById("root")).render(
     <App />
   </React.StrictMode>
 );
+

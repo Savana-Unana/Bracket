@@ -409,6 +409,7 @@ button {
 }
 
 .ball-skin {
+  position: relative;
   width: 96px;
   aspect-ratio: 1;
   border-radius: 50%;
@@ -417,11 +418,42 @@ button {
   overflow: hidden;
 }
 
+.ball-skin:has(.preview-accessory.electric),
+.ball-skin:has(.preview-accessory.baseball) {
+  overflow: visible;
+}
+
 .ball-skin img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.preview-accessory {
+  position: absolute;
+  pointer-events: none;
+}
+
+.preview-accessory.water {
+  left: -7%;
+  top: 8%;
+  width: 114%;
+  height: 43%;
+}
+
+.preview-accessory.electric {
+  left: -28%;
+  top: -66%;
+  width: 156%;
+  height: 83%;
+}
+
+.preview-accessory.baseball {
+  left: -5%;
+  top: -44%;
+  width: 112%;
+  height: 64%;
 }
 
 dl {
