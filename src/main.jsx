@@ -5,6 +5,8 @@ import "./styles.css";
 import waterLogo from "./assets/ELogos/Water-Logo.png";
 import poisonLogo from "./assets/ELogos/Toxic-Logo.png";
 import lifeLogo from "./assets/ELogos/Plant-Logo.png";
+import moonLogo from "./assets/ELogos/Moon-Logo.png";
+import gravityLogo from "./assets/ELogos/Gravity-Logo.png";
 import baseballLogo from "./assets/ELogos/Baseball-Logo.png";
 import waterSkin from "./assets/ESkins/Water-Normal.png";
 import poisonSkin from "./assets/ESkins/Toxic-Normal.png";
@@ -18,6 +20,7 @@ import flytrapAttack1Asset from "./assets/EAttack/Flytrap-Attack1.png";
 import flytrapAttack2Asset from "./assets/EAttack/Flytrap-Attack2.png";
 import flytrapAttack3Asset from "./assets/EAttack/Flytrap-Attack3.png";
 import baseballBatAsset from "./assets/EAttack/Basebat.png";
+import teslaAsset from "./assets/EAttack/Tesla.png";
 import duringLiquidSfx from "./assets/ESFX/During-Liquid.mp3";
 import flytrapChompSfx from "./assets/ESFX/Flytrap-Chomp.mp3";
 import flytrapPlantSfx from "./assets/ESFX/Flytrap-Plant.mp3";
@@ -29,6 +32,15 @@ import syringeSfx from "./assets/ESFX/Syringe.mp3";
 import teslaPlaceSfx from "./assets/ESFX/Tesla-Place.mp3";
 import teslaZapSfx from "./assets/ESFX/Tesla-Zap.mp3";
 import toxicWinSfx from "./assets/ESFX/Toxic-Win.mp3";
+import waterWinSfx from "./assets/ESFX/Water-Win.mp3";
+import fireChargeSfx from "./assets/ESFX/Fire-Charge.mp3";
+import fireLaunchSfx from "./assets/ESFX/Fire-Launch.mp3";
+import lifeWinSfx from "./assets/ESFX/Life-Win.mp3";
+import baseballChargeSfx from "./assets/ESFX/Baseball-Charge.mp3";
+import baseballSwingSfx from "./assets/ESFX/Baseball-Swing.mp3";
+import baseballHitSfx from "./assets/ESFX/Baseball-Hit.mp3";
+import airrowAppearSfx from "./assets/ESFX/Airrow-Appear.mp3";
+import airSlamSfx from "./assets/ESFX/Air-Slam.mp3";
 
 const randomCode = () =>
   Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
@@ -135,6 +147,7 @@ const fighters = [
     short: "GRV",
     hue: "#56616f",
     accent: "#d6d9df",
+    logo: gravityLogo,
     hp: 100,
     weight: 1.15,
     damage: 1,
@@ -536,13 +549,48 @@ function ModifierDrawer({ open, close, modifiers, setModifiers }) {
 
 function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldProgress }) {
   const canvasRef = React.useRef(null);
-  const playSfx = React.useCallback((src, volumeScale = 1) => {
-    if (!settings.sfx) return;
+  const activeSfxRef = React.useRef(new Set());
+  const activeSfxScalesRef = React.useRef(new Map());
+  const stopSfx = React.useCallback((audio) => {
+    if (!audio) return;
+    window.clearTimeout(audio.stopTimer);
+    audio.pause();
+    audio.currentTime = 0;
+    activeSfxRef.current.delete(audio);
+    activeSfxScalesRef.current.delete(audio);
+  }, []);
+  const stopAllSfx = React.useCallback(() => {
+    Array.from(activeSfxRef.current).forEach((audio) => stopSfx(audio));
+  }, [stopSfx]);
+  const playSfx = React.useCallback((src, volumeScale = 1, options = {}) => {
+    if (!settings.sfx) return null;
 
     const audio = new Audio(src);
     audio.volume = Math.max(0, Math.min(1, (settings.volume / 100) * volumeScale));
-    audio.play().catch(() => {});
-  }, [settings.sfx, settings.volume]);
+    audio.loop = Boolean(options.loop);
+    activeSfxRef.current.add(audio);
+    activeSfxScalesRef.current.set(audio, volumeScale);
+    const removeAudio = () => {
+      window.clearTimeout(audio.stopTimer);
+      activeSfxRef.current.delete(audio);
+      activeSfxScalesRef.current.delete(audio);
+    };
+    audio.addEventListener("ended", removeAudio, { once: true });
+    if (options.maxDurationMs) audio.stopTimer = window.setTimeout(() => stopSfx(audio), options.maxDurationMs);
+    audio.play().catch(removeAudio);
+    return audio;
+  }, [settings.sfx, settings.volume, stopSfx]);
+  React.useEffect(() => {
+    if (!settings.sfx) {
+      stopAllSfx();
+      return;
+    }
+    activeSfxRef.current.forEach((audio) => {
+      const volumeScale = activeSfxScalesRef.current.get(audio) ?? 1;
+      audio.volume = Math.max(0, Math.min(1, (settings.volume / 100) * volumeScale));
+    });
+  }, [settings.sfx, settings.volume, stopAllSfx]);
+  React.useEffect(() => stopAllSfx, [stopAllSfx]);
   const maxHp = React.useMemo(() => selected.map((fighter) => Math.round(fighter.hp * modifiers.health)), [selected, modifiers.health]);
   const [state, setState] = React.useState({
     hp: maxHp,
@@ -603,7 +651,9 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     const skinImages = selected.map((fighter) => fighter.skin ? makeImage(fighter.skin) : null);
     const hurtSkinImages = selected.map((fighter) => fighter.hurtSkin ? makeImage(fighter.hurtSkin) : null);
     const syringeImage = makeImage(syringeAsset);
+    const moonImage = makeImage(moonLogo);
     const baseballBatImage = makeImage(baseballBatAsset);
+    const teslaImage = makeImage(teslaAsset);
     const trapImages = [
       makeImage(flytrapIdleAsset),
       makeImage(flytrapAttack1Asset),
@@ -664,6 +714,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       touchingLastFrame: false,
       lastToxinTickAt: now,
       nextLightningAt: Infinity,
+      liquidAudio: null,
       lastHudAt: 0
     };
     const normalSpeed = 5.4 * modifiers.speed;
@@ -702,12 +753,15 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         trappedBy: null,
         slam: null,
         swing: null,
+        baseballChargeAudio: null,
+        baseballSwingAudio: null,
         overloadState: "building",
         overloadChargeAt: 0,
         overloadDashStartedAt: 0,
         overloadBonus: 0,
         overloadHit: false,
         overloadSpeed: 0,
+        fireChargeAudio: null,
         lastFireFlameAt: 0,
         lastImpactAt: now,
         defrostUntil: 0,
@@ -741,6 +795,12 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     };
     const markImpact = (ball, time) => {
       ball.lastImpactAt = time;
+    };
+    const stopBaseballSfx = (ball) => {
+      stopSfx(ball.baseballChargeAudio);
+      stopSfx(ball.baseballSwingAudio);
+      ball.baseballChargeAudio = null;
+      ball.baseballSwingAudio = null;
     };
     const isAbilityPaused = (ball, time = performance.now()) => ball.powered || ball.slam || time < ball.stunnedUntil;
     const getIcePhysicsSpeed = (ball, time) => {
@@ -920,7 +980,19 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       if (game.defeatedSide !== null) return;
       game.defeatedSide = side;
       game.winner = side ? 0 : 1;
+      if (game.liquidAudio) {
+        stopSfx(game.liquidAudio);
+        game.liquidAudio = null;
+      }
+      balls.forEach((ball) => {
+        if (!ball.fireChargeAudio) return;
+        stopSfx(ball.fireChargeAudio);
+        ball.fireChargeAudio = null;
+      });
+      balls.forEach(stopBaseballSfx);
       if (selected[game.winner].id === "poison") playSfx(toxicWinSfx);
+      if (selected[game.winner].id === "water") playSfx(waterWinSfx);
+      if (selected[game.winner].id === "life") playSfx(lifeWinSfx);
 
       const defeatedBall = balls[side];
       addExplosion(defeatedBall.x, defeatedBall.y, defeatedBall.fighter.hue, 1.8);
@@ -949,6 +1021,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
           ball.overloadChargeAt = time + 2000;
           ball.overloadBonus = overdamage;
           ball.overloadHit = false;
+          ball.fireChargeAudio = playSfx(fireChargeSfx, 0.85, { maxDurationMs: 2000 });
           effect.overloadState = "Charging";
         }
         return;
@@ -957,13 +1030,13 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       ball.overloadBonus += lostHp;
       effect.overloadBonus = ball.overloadBonus;
     };
-    const pushDamage = (side, amount, x, y) => {
+    const pushDamage = (side, amount, x, y, options = {}) => {
       if (game.defeatedSide !== null || game.hp[side] <= 0) return;
       if (game.effects[side].liquidState === "Water") return;
       const previousHp = game.hp[side];
       game.hp[side] = Math.max(0, game.hp[side] - amount);
       const lostHp = previousHp - game.hp[side];
-      playSfx(hitSfx, 0.5);
+      if (options.sfx !== false) playSfx(options.sfx || hitSfx, options.volumeScale ?? 0.5);
       balls[side].hurtUntil = performance.now() + 167;
       game.floating.push({ id: `${performance.now()}-${side}`, side, x, y, text: `-${amount}` });
       game.floating = game.floating.slice(-8);
@@ -977,9 +1050,9 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq));
       return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
     };
-    const addTeslaCoil = (ball, x, y, time) => {
+    const addTeslaCoil = (ball, x, y, time, angle = 0) => {
       if (game.teslaCoils.some((coil) => coil.side === ball.side && Math.hypot(coil.x - x, coil.y - y) < ball.r * 1.4)) return;
-      game.teslaCoils.push({ id: `${time}-${ball.side}-${game.teslaCoils.length}`, side: ball.side, x, y });
+      game.teslaCoils.push({ id: `${time}-${ball.side}-${game.teslaCoils.length}`, side: ball.side, x, y, angle });
       playSfx(teslaPlaceSfx, 0.7);
       if (game.teslaCoils.filter((coil) => coil.side === ball.side).length === 2) {
         game.nextLightningAt = Math.min(game.nextLightningAt, time + 5000);
@@ -1181,6 +1254,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         startedAt: time,
         slammed: false
       });
+      playSfx(airrowAppearSfx, 0.85);
       game.nextBlueModeAt[ball.side] = time + blueModeCooldown;
     };
     const startBaseballSwing = (ball, time) => {
@@ -1198,6 +1272,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       ball.baseVy = Math.sin(angle) * normalSpeed;
       ball.vx = 0;
       ball.vy = 0;
+      stopBaseballSfx(ball);
+      ball.baseballChargeAudio = playSfx(baseballChargeSfx, 0.85, { loop: true });
     };
     const startBaseballFrenzySwing = (ball, time) => {
       const target = balls[ball.side ? 0 : 1];
@@ -1211,12 +1287,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
         swung: false,
         swingingUntil: 0
       };
+      stopBaseballSfx(ball);
     };
     const stunBall = (ball, time) => {
       ball.powered = false;
       ball.poweredUntil = 0;
       ball.slam = null;
       ball.swing = null;
+      stopBaseballSfx(ball);
       ball.trappedBy = null;
       ball.trapSpitUntil = 0;
       ball.vx = 0;
@@ -1235,18 +1313,25 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       const offBatCenter = Math.abs(dx * Math.sin(swingAngle) - dy * Math.cos(swingAngle));
       const hit = game.hp[target.side] > 0 && alongBat >= 0 && alongBat <= swingRange && offBatCenter <= target.r;
 
+      stopSfx(ball.baseballChargeAudio);
+      ball.baseballChargeAudio = null;
       if (hit) {
+        stopSfx(ball.baseballSwingAudio);
+        ball.baseballSwingAudio = null;
         if (ball.swing.frenzy) {
-          pushDamage(target.side, 4, target.x, target.y);
+          pushDamage(target.side, 4, target.x, target.y, { sfx: baseballHitSfx, volumeScale: 0.85 });
           if (game.hp[target.side] > 0) stunBall(target, time);
         } else {
-          pushDamage(target.side, 10, target.x, target.y);
+          pushDamage(target.side, 10, target.x, target.y, { sfx: baseballHitSfx, volumeScale: 0.85 });
           if (game.hp[target.side] > 0) markPowerAtAngle(target, time, swingAngle);
           game.effects[ball.side].strikes = 0;
         }
       } else if (!ball.swing.frenzy) {
+        ball.baseballSwingAudio = playSfx(baseballSwingSfx, 0.75, { maxDurationMs: 160 });
         game.effects[ball.side].strikes = Math.min(3, (game.effects[ball.side].strikes ?? 0) + 1);
         ball.swing.frenzyQueued = game.effects[ball.side].strikes >= 3;
+      } else {
+        ball.baseballSwingAudio = playSfx(baseballSwingSfx, 0.75, { maxDurationMs: 160 });
       }
 
       ball.swing.swung = true;
@@ -1269,6 +1354,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
     };
     const updateBaseballSwing = (ball, time) => {
       if (ball.swing?.swung && time >= ball.swing.swingingUntil) {
+        stopSfx(ball.baseballSwingAudio);
+        ball.baseballSwingAudio = null;
         setVelocity(ball, ball.swing.resumeAngle, normalSpeed);
         if (ball.swing.frenzy) {
           game.effects[ball.side].frenzySwings = (game.effects[ball.side].frenzySwings ?? 0) + 1;
@@ -1322,7 +1409,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       const reboundAngle = Math.atan2(-ball.vy, -ball.vx);
       ball.slam = null;
       restoreBaseVelocity(ball);
-      pushDamage(ball.side, damage, ball.x, ball.y);
+      pushDamage(ball.side, damage, ball.x, ball.y, { sfx: airSlamSfx, volumeScale: 0.85 });
       if (damage >= 12 && game.hp[ball.side] > 0) markPowerAtAngle(ball, performance.now(), reboundAngle);
     };
     const bounceBalls = (a, b, time) => {
@@ -1580,21 +1667,27 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       });
 
       game.teslaCoils.forEach((coil) => {
+        const size = ballRadius * 1.5;
         ctx.save();
         ctx.translate(coil.x, coil.y);
-        ctx.fillStyle = "#facc15";
-        ctx.strokeStyle = "#111";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, 0, ballRadius * 0.32, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.strokeStyle = "#fff7ad";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, -ballRadius * 0.85);
-        ctx.lineTo(0, ballRadius * 0.85);
-        ctx.stroke();
+        ctx.rotate(coil.angle + Math.PI / 2);
+        if (teslaImage.complete && teslaImage.naturalWidth) {
+          ctx.drawImage(teslaImage, -size / 2, -size / 2, size, size);
+        } else {
+          ctx.fillStyle = "#facc15";
+          ctx.strokeStyle = "#111";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, ballRadius * 0.32, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = "#fff7ad";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, -ballRadius * 0.85);
+          ctx.lineTo(0, ballRadius * 0.85);
+          ctx.stroke();
+        }
         ctx.restore();
       });
 
@@ -1616,14 +1709,20 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       balls.forEach((ball) => {
         if (ball.fighter.id !== "gravity" || game.hp[ball.side] <= 0) return;
         getMoonPositions(ball, time).forEach((moon) => {
+          const size = ball.r * 0.82;
           ctx.save();
-          ctx.fillStyle = "#cfd5df";
-          ctx.strokeStyle = "#333840";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(moon.x, moon.y, ball.r * 0.34, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
+          ctx.translate(moon.x, moon.y);
+          if (moonImage.complete && moonImage.naturalWidth) {
+            ctx.drawImage(moonImage, -size / 2, -size / 2, size, size);
+          } else {
+            ctx.fillStyle = "#cfd5df";
+            ctx.strokeStyle = "#333840";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r * 0.34, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
           ctx.restore();
         });
       });
@@ -1684,11 +1783,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             if (time >= ball.overloadChargeAt) {
               const target = balls[ball.side ? 0 : 1];
               const angle = Math.atan2(target.y - ball.y, target.x - ball.x);
+              stopSfx(ball.fireChargeAudio);
+              ball.fireChargeAudio = null;
               ball.overloadState = "dashing";
               ball.overloadDashStartedAt = time;
               ball.overloadSpeed = powerSpeed * 1.05;
               ball.overloadHit = false;
               game.effects[ball.side].overloadState = "Dashing";
+              playSfx(fireLaunchSfx, 0.9);
               setVelocity(ball, angle, ball.overloadSpeed);
             }
           }
@@ -1730,7 +1832,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               ball.vx = Math.abs(ball.vx);
             }
             if (ball.fighter.id === "life" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, 8, ball.y, 0);
-            if (ball.fighter.id === "electric") addTeslaCoil(ball, 8, ball.y, time);
+            if (ball.fighter.id === "electric") addTeslaCoil(ball, 8, ball.y, time, 0);
           }
           if (ball.x > box.w - ball.r) {
             ball.x = box.w - ball.r;
@@ -1747,7 +1849,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               ball.vx = -Math.abs(ball.vx);
             }
             if (ball.fighter.id === "life" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, box.w - 8, ball.y, Math.PI);
-            if (ball.fighter.id === "electric") addTeslaCoil(ball, box.w - 8, ball.y, time);
+            if (ball.fighter.id === "electric") addTeslaCoil(ball, box.w - 8, ball.y, time, Math.PI);
           }
           if (ball.y < ball.r) {
             ball.y = ball.r;
@@ -1764,7 +1866,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               ball.vy = Math.abs(ball.vy);
             }
             if (ball.fighter.id === "life" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, ball.x, 8, Math.PI / 2);
-            if (ball.fighter.id === "electric") addTeslaCoil(ball, ball.x, 8, time);
+            if (ball.fighter.id === "electric") addTeslaCoil(ball, ball.x, 8, time, Math.PI / 2);
           }
           if (ball.y > box.h - ball.r) {
             ball.y = box.h - ball.r;
@@ -1781,7 +1883,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
               ball.vy = -Math.abs(ball.vy);
             }
             if (ball.fighter.id === "life" && !isAbilityPaused(ball, time)) spawnTrap(ball.side, ball.x, box.h - 8, -Math.PI / 2);
-            if (ball.fighter.id === "electric") addTeslaCoil(ball, ball.x, box.h - 8, time);
+            if (ball.fighter.id === "electric") addTeslaCoil(ball, ball.x, box.h - 8, time, -Math.PI / 2);
           }
         });
 
@@ -1828,6 +1930,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             ball.overloadHit = true;
             ball.overloadBonus = 0;
             ball.overloadSpeed = 0;
+            stopSfx(ball.fireChargeAudio);
+            ball.fireChargeAudio = null;
             ball.lastFireFlameAt = 0;
             game.fireFlames = game.fireFlames.filter((flame) => flame.side !== ball.side);
             game.effects[ball.side].overloadDamage = 0;
@@ -1839,7 +1943,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
             const liquidStarted = !game.liquidContact;
             game.liquidContact = { waterSide, otherSide };
             game.effects[waterSide].liquidState = "Water";
-            if (liquidStarted) playSfx(duringLiquidSfx);
+            if (liquidStarted) game.liquidAudio = playSfx(duringLiquidSfx, 1, { loop: true });
             game.effects[waterSide].transparency = Math.min(92, game.effects[waterSide].transparency + 0.12);
             if (!balls[otherSide].inLiquid) {
               balls[otherSide].baseVx = balls[otherSide].vx;
@@ -1872,6 +1976,8 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
           releasedBall.inLiquid = false;
           game.liquidDamageAccumulator = 0;
           game.liquidContact = null;
+          stopSfx(game.liquidAudio);
+          game.liquidAudio = null;
         }
         game.touchingLastFrame = touching;
 
@@ -2150,8 +2256,13 @@ function Battle({ fighters: selected, modifiers, settings, mode, back, exitHoldP
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, [selected, modifiers, state.countdown, maxHp, playSfx]);
+    return () => {
+      cancelAnimationFrame(raf);
+      stopSfx(game.liquidAudio);
+      balls.forEach((ball) => stopSfx(ball.fireChargeAudio));
+      balls.forEach(stopBaseballSfx);
+    };
+  }, [selected, modifiers, state.countdown, maxHp, playSfx, stopSfx]);
 
   return (
     <section className="battle-screen">
