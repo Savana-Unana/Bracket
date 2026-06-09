@@ -425,6 +425,12 @@ button {
   overflow: hidden;
 }
 
+.ball-skin.digital {
+  border-color: #550000;
+  background: radial-gradient(circle at 32% 24%, var(--accent), var(--hue) 60%, #900 120%);
+  box-shadow: 0 0 18px 5px rgba(255, 55, 55, 0.55);
+}
+
 .ball-skin:has(.preview-accessory.electric),
 .ball-skin:has(.preview-accessory.baseball) {
   overflow: visible;
