@@ -9,13 +9,22 @@ import moonLogo from "./assets/ELogos/Moon-Logo.png";
 import gravityLogo from "./assets/ELogos/Gravity-Logo.png";
 import baseballLogo from "./assets/ELogos/Baseball-Logo.png";
 import randomLogo from "./assets/ELogos/Random-Logo.png";
+import digitalLogo from "./assets/ELogos/Digital-Logo.png";
+import fireLogo from "./assets/ELogos/Fire-Logo.png";
+import electricLogo from "./assets/ELogos/Electric-Logo.png";
 import modifierIcon from "./assets/Misc/Modifier.png";
-import waterSkin from "./assets/ESkins/Water-Normal.png";
-import poisonSkin from "./assets/ESkins/Toxic-Normal.png";
-import lifeSkin from "./assets/ESkins/Life-Normal.png";
-import waterHurtSkin from "./assets/ESkins/Water-Hurt.png";
-import poisonHurtSkin from "./assets/ESkins/Toxic-Hurt.png";
-import lifeHurtSkin from "./assets/ESkins/Life-Hurt.png";
+// import waterSkin from "./assets/ESkins/Water-Normal.png";
+// import poisonSkin from "./assets/ESkins/Toxic-Normal.png";
+// import lifeSkin from "./assets/ESkins/Life-Normal.png";
+// import waterHurtSkin from "./assets/ESkins/Water-Hurt.png";
+// import poisonHurtSkin from "./assets/ESkins/Toxic-Hurt.png";
+// import lifeHurtSkin from "./assets/ESkins/Life-Hurt.png";
+// import digitalSkin from "./assets/ESkins/Digital-Normal.png";
+// import digitalHurtSkin from "./assets/ESkins/Digital-Hurt.png";
+// import fireSkin from "./assets/ESkins/Fire-Normal.png";
+// import fireHurtSkin from "./assets/ESkins/Fire-Hurt.png";
+// import electricSkin from "./assets/ESkins/Electric-Normal.png";
+// import electricHurtSkin from "./assets/ESkins/Electric-Hurt.png";
 import syringeAsset from "./assets/EAttack/Syringe.png";
 import icicleAsset from "./assets/EAttack/Icicle.png";
 import lightningAsset from "./assets/EAttack/Lightning.png";
@@ -53,6 +62,9 @@ import airWinSfx from "./assets/ESFX/Air-Win.mp3";
 import gravityWinSfx from "./assets/ESFX/Gravity-Win.mp3";
 import baseballWinSfx from "./assets/ESFX/Baseball-Win.mp3";
 import ghostWinSfx from "./assets/ESFX/Ghost-Win.mp3";
+import iceLogo from "./assets/ELogos/Ice-Logo.png";
+// import iceSkin from "./assets/ESkins/Ice-Normal.png";
+// import iceHurtSkin from "./assets/ESkins/Ice-Hurt.png";
 import fireChargeSfx from "./assets/ESFX/Fire-Charge.mp3";
 import fireLaunchSfx from "./assets/ESFX/Fire-Launch.mp3";
 import lifeWinSfx from "./assets/ESFX/Life-Win.mp3";
@@ -75,11 +87,13 @@ const randomCode = () =>
   Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
 
 const ARENA_SIZE = 620;
+const MELTDOWN_IMAGE_SRC = "/Meltdown.png";
 const GENESIS_COOLDOWN_MS = 2000;
 const ROCKSLIDE_COOLDOWN_MS = 5000;
 const LUCK_SPIN_INTERVAL_MS = 2000;
 const LUCK_SPIN_DURATION_MS = 1000;
 const LUCK_NOTHING_SFX_MS = 500;
+const LUCK_EARN_SFX_MS = 1000;
 const LUCK_SLOTS = ["glove", "bottle", "arrows", "x"];
 const LUCK_SLOT_LABELS = {
   glove: "GLV",
@@ -96,8 +110,8 @@ const fighters = [
     hue: "#30b7ff",
     accent: "#d8f5ff",
     logo: waterLogo,
-    skin: waterSkin,
-    hurtSkin: waterHurtSkin,
+    // skin: waterSkin,
+    // hurtSkin: waterHurtSkin,
     hp: 100,
     weight: 1,
     damage: 1,
@@ -111,8 +125,8 @@ const fighters = [
     hue: "#8ce646",
     accent: "#2a0d36",
     logo: poisonLogo,
-    skin: poisonSkin,
-    hurtSkin: poisonHurtSkin,
+    // skin: poisonSkin,
+    // hurtSkin: poisonHurtSkin,
     hp: 100,
     weight: 1.1,
     damage: 1,
@@ -126,8 +140,8 @@ const fighters = [
     hue: "#31b65b",
     accent: "#f8b5c7",
     logo: lifeLogo,
-    skin: lifeSkin,
-    hurtSkin: lifeHurtSkin,
+    // skin: lifeSkin,
+    // hurtSkin: lifeHurtSkin,
     hp: 100,
     weight: 1.1,
     damage: 1,
@@ -140,6 +154,9 @@ const fighters = [
     short: "FIR",
     hue: "#f97316",
     accent: "#ffe08a",
+    logo: fireLogo,
+    // skin: fireSkin,
+    // hurtSkin: fireHurtSkin,
     hp: 100,
     weight: 1.1,
     damage: 1,
@@ -152,6 +169,9 @@ const fighters = [
     short: "ICE",
     hue: "#8de7ff",
     accent: "#eefcff",
+    logo: iceLogo,
+    // skin: iceSkin,
+    // hurtSkin: iceHurtSkin,
     hp: 100,
     weight: 1.1,
     damage: 1,
@@ -164,6 +184,9 @@ const fighters = [
     short: "ELC",
     hue: "#facc15",
     accent: "#fff7ad",
+    logo: electricLogo,
+    // skin: electricSkin,
+    // hurtSkin: electricHurtSkin,
     hp: 100,
     weight: 1.1,
     damage: 1,
@@ -227,6 +250,9 @@ const fighters = [
     short: "DGT",
     hue: "#ff1a1a",
     accent: "#ff7a7a",
+    logo: digitalLogo,
+    // skin: digitalSkin,
+    // hurtSkin: digitalHurtSkin,
     hp: 50,
     weight: 1.05,
     damage: 0,
@@ -318,7 +344,7 @@ function App() {
   const [pendingOnlineCode, setPendingOnlineCode] = React.useState("");
   const [mode, setMode] = React.useState("local");
   const [choices, setChoices] = React.useState([]);
-  const [recordGames, setRecordGames] = React.useState(false);
+  const [recordGames, setRecordGames] = React.useState(true);
   const [leaderboard, setLeaderboard] = React.useState(() => readLeaderboard());
   const [exitHoldProgress, setExitHoldProgress] = React.useState(0);
   const choicesRef = React.useRef([]);
@@ -657,11 +683,13 @@ function CharacterSelect({ mode, choices, chooseFighter, setScreen, modifiers, s
 }
 
 function FighterPedestal({ label, fighter, side }) {
-  const accessoryByFighter = {
-    water: blindfoldAsset,
-    electric: scienceHairAsset,
-    baseball: capAsset
-  };
+  // Faces are disabled in the preview. Keep the mapping here as a reference,
+  // but do not render the face accessory. Use fighter logos instead.
+  // const accessoryByFighter = {
+  //   water: blindfoldAsset,
+  //   electric: scienceHairAsset,
+  //   baseball: capAsset
+  // };
   return (
     <div className={`pedestal-wrap ${side}`}>
       <span className="player-label">{label}</span>
@@ -669,8 +697,12 @@ function FighterPedestal({ label, fighter, side }) {
         {fighter && (
           <>
             <div className={`ball-skin ${fighter.id === "digital" ? "digital" : ""}`} style={{ "--hue": fighter.hue, "--accent": fighter.accent }}>
-              {fighter.skin && <img src={fighter.skin} alt="" />}
-              {accessoryByFighter[fighter.id] && <img className={`preview-accessory ${fighter.id}`} src={accessoryByFighter[fighter.id]} alt="" />}
+              <div className="skin-wrapper">
+                {fighter.logo ? <img src={fighter.logo} alt="" /> : fighter.short}
+                {/* {fighter.skin && <img src={fighter.skin} alt="" />} */}
+              </div>
+              {/* Face accessory disabled: use fighter logos in selection/leaderboard instead */}
+              {/* {accessoryByFighter[fighter.id] && <img className={`preview-accessory ${fighter.id}`} src={accessoryByFighter[fighter.id]} alt="" />} */}
             </div>
             <strong>{fighter.name}</strong>
             <dl>
@@ -795,7 +827,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       antiVirusContacts: 0,
       antiVirusRequired: 5,
       toxinDamageOutput: fighter.id === "poison" ? 0 : null,
-      nextSyringe: fighter.id === "poison" ? 3 : null,
+      nextSyringe: fighter.id === "poison" ? 5 : null,
       activeGrowths: fighter.id === "life" ? 0 : null,
       lifeChomps: fighter.id === "life" ? 0 : null,
       maxGrowths: fighter.id === "life" ? 5 : null,
@@ -883,8 +915,10 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       image.src = src;
       return image;
     };
-    const skinImages = selected.map((fighter) => fighter.skin ? makeImage(fighter.skin) : null);
-    const hurtSkinImages = selected.map((fighter) => fighter.hurtSkin ? makeImage(fighter.hurtSkin) : null);
+    // ESkins are disabled; use ELogos for all ball rendering instead.
+    // const skinImages = selected.map((fighter) => fighter.skin ? makeImage(fighter.skin) : null);
+    // const hurtSkinImages = selected.map((fighter) => fighter.hurtSkin ? makeImage(fighter.hurtSkin) : null);
+    const logoImages = selected.map((fighter) => fighter.logo ? makeImage(fighter.logo) : null);
     const syringeImage = makeImage(syringeAsset);
     const icicleImage = makeImage(icicleAsset);
     const lightningImage = makeImage(lightningAsset);
@@ -911,7 +945,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         antiVirusContacts: 0,
         antiVirusRequired: 5,
         toxinDamageOutput: fighter.id === "poison" ? 0 : null,
-        nextSyringe: fighter.id === "poison" ? 3 : null,
+        nextSyringe: fighter.id === "poison" ? 5 : null,
         activeGrowths: fighter.id === "life" ? 0 : null,
         lifeChomps: fighter.id === "life" ? 0 : null,
         maxGrowths: fighter.id === "life" ? 5 : null,
@@ -1480,6 +1514,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       deactivateTeslaWeb();
       game.nextSyringeAt[side] = Infinity;
       game.effects[side].nextSyringe = game.effects[side].nextSyringe === null ? null : 0;
+      balls.forEach((ball) => {
+        if (ball.meltdown) ball.meltdown = null;
+      });
+      game.effects.forEach((effect) => {
+        effect.meltdownState = "Stable";
+        effect.meltdownRole = null;
+        effect.meltdownText = "";
+      });
     };
     const addFireOverloadDamage = (ball, lostHp, time) => {
       if (ball.fighter.id !== "fire" || lostHp <= 0 || game.hp[ball.side] <= 0) return;
@@ -1679,7 +1721,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         playSfx(luckXSfx, 0.8);
         pushDamage(ball.side, 3, ball.x, ball.y);
       } else if (earned) {
-        playSfx(luckEarnSfx, 0.85);
+        playSfx(luckEarnSfx, 0.51, { maxDurationMs: LUCK_EARN_SFX_MS });
       } else {
         playSfx(luckNothingSfx, 0.75, { maxDurationMs: LUCK_NOTHING_SFX_MS });
       }
@@ -2011,18 +2053,49 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
     };
     const spawnRockslide = (ball, time) => {
       if (game.defeatedSide !== null || game.hp[ball.side] <= 0) return;
+      const target = balls[ball.side ? 0 : 1];
+      const centerX = target.x;
+      const centerY = target.y;
+      if (Math.random() < 0.5) {
+        const r = ball.r * 0.95;
+        game.rocks.push({
+          id: `${time}-${ball.side}-${game.rocks.length}-boulder`,
+          kind: "boulder",
+          side: ball.side,
+          target: target.side,
+          x: Math.max(r, Math.min(box.w - r, centerX + (Math.random() - 0.5) * ball.r * 1.1)),
+          y: -r * 1.8,
+          vx: (Math.random() - 0.5) * normalSpeed * 0.06,
+          vy: normalSpeed * 0.92,
+          r,
+          mass: r * r * 3,
+          angle: Math.random() * Math.PI * 2,
+          spin: (Math.random() - 0.5) * 0.035,
+          bornAt: time,
+          hit: false,
+          thudded: false,
+          thuddedAt: null
+        });
+        game.nextRockslideAt[ball.side] = time + ROCKSLIDE_COOLDOWN_MS;
+        return;
+      }
       const rockCount = 12 + Math.floor(Math.random() * 7);
+      const clusterRadius = ball.r * 2.2;
       for (let index = 0; index < rockCount; index += 1) {
         const sizeRoll = Math.random();
         const r = sizeRoll < 0.18 ? ball.r * 0.36 : sizeRoll < 0.55 ? ball.r * 0.27 : ball.r * 0.19;
+        const clusterAngle = Math.random() * Math.PI * 2;
+        const clusterDistance = Math.sqrt(Math.random()) * clusterRadius;
+        const x = centerX + Math.cos(clusterAngle) * clusterDistance;
         game.rocks.push({
           id: `${time}-${ball.side}-${game.rocks.length}-${index}`,
+          kind: "cluster",
           side: ball.side,
-          target: ball.side ? 0 : 1,
-          x: r + Math.random() * (box.w - r * 2),
-          y: -r - index * 10 - Math.random() * box.h * 0.35,
-          vx: (Math.random() - 0.5) * normalSpeed * 0.28,
-          vy: normalSpeed * (0.54 + Math.random() * 0.36),
+          target: target.side,
+          x: Math.max(r, Math.min(box.w - r, x)),
+          y: -r - index * 16 - Math.random() * box.h * 0.18,
+          vx: (centerX - x) * 0.006 + (Math.random() - 0.5) * normalSpeed * 0.1,
+          vy: normalSpeed * (0.62 + Math.random() * 0.34) + Math.max(0, centerY / box.h) * 0.9,
           r,
           mass: r * r,
           angle: Math.random() * Math.PI * 2,
@@ -2037,7 +2110,14 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       if (rock.hit || game.hp[target.side] <= 0 || isFearPlasma(target) || isBaseballFrenzy(target)) return;
       if (Math.hypot(rock.x - target.x, rock.y - target.y) >= rock.r + target.r) return;
       rock.hit = true;
-      pushDamage(target.side, 2, target.x, target.y, { sfx: hitSfx, volumeScale: 0.45 });
+      if (rock.kind === "boulder" && rock.y < target.y) {
+        target.x = Math.max(target.r, Math.min(box.w - target.r, rock.x));
+        target.y = Math.max(target.r, Math.min(box.h - target.r, rock.y + rock.r + target.r * 0.35));
+        pushDamage(target.side, 10, target.x, target.y, { sfx: hitSfx, volumeScale: 0.7 });
+        if (game.hp[target.side] > 0) markPowerAtAngle(target, time, Math.PI / 2 + (Math.random() - 0.5) * 0.6);
+        return;
+      }
+      pushDamage(target.side, 1, target.x, target.y, { sfx: hitSfx, volumeScale: 0.45 });
     };
     const updateRockslide = (ball, time, paused, dt) => {
       const effect = game.effects[ball.side];
@@ -2058,48 +2138,24 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         rock.x += rock.vx;
         rock.y += rock.vy;
         rock.angle += rock.spin;
-        if (rock.x < rock.r || rock.x > box.w - rock.r) {
-          rock.x = Math.max(rock.r, Math.min(box.w - rock.r, rock.x));
-          rock.vx *= -0.74;
-        }
-        if (rock.y > box.h - rock.r) {
+        if (rock.kind === "boulder" && rock.y > box.h - rock.r) {
           rock.y = box.h - rock.r;
-          rock.vy *= -0.52;
-          rock.vx *= 0.92;
+          rock.vy = 0;
+          rock.vx *= 0.82;
+          if (!rock.thudded) {
+            rock.thudded = true;
+            rock.thuddedAt = time;
+          }
         }
         if (rock.y < -box.h * 0.35) return;
         const target = balls[rock.target];
         applyRockHit(rock, target, time);
       });
-      for (let firstIndex = 0; firstIndex < game.rocks.length; firstIndex += 1) {
-        const first = game.rocks[firstIndex];
-        for (let secondIndex = firstIndex + 1; secondIndex < game.rocks.length; secondIndex += 1) {
-          const second = game.rocks[secondIndex];
-          const dx = second.x - first.x;
-          const dy = second.y - first.y;
-          const dist = Math.hypot(dx, dy) || 1;
-          const minDist = first.r + second.r;
-          if (dist >= minDist) continue;
-          const nx = dx / dist;
-          const ny = dy / dist;
-          const overlap = minDist - dist;
-          const totalMass = first.mass + second.mass;
-          first.x -= nx * overlap * (second.mass / totalMass);
-          first.y -= ny * overlap * (second.mass / totalMass);
-          second.x += nx * overlap * (first.mass / totalMass);
-          second.y += ny * overlap * (first.mass / totalMass);
-          const relVx = second.vx - first.vx;
-          const relVy = second.vy - first.vy;
-          const impactSpeed = relVx * nx + relVy * ny;
-          if (impactSpeed > 0) continue;
-          const impulse = (-(1 + 0.58) * impactSpeed) / (1 / first.mass + 1 / second.mass);
-          first.vx -= (impulse * nx) / first.mass;
-          first.vy -= (impulse * ny) / first.mass;
-          second.vx += (impulse * nx) / second.mass;
-          second.vy += (impulse * ny) / second.mass;
-        }
-      }
-      game.rocks = game.rocks.filter((rock) => !rock.hit && time - rock.bornAt < 7600 && rock.y < box.h + rock.r * 3);
+      game.rocks = game.rocks.filter((rock) => {
+        if (rock.hit) return false;
+        if (rock.kind === "boulder" && rock.thudded && time - rock.thuddedAt > 700) return false;
+        return time - rock.bornAt < 7600 && rock.y < box.h + rock.r * 3;
+      });
       game.effects.forEach((effect, index) => {
         if (effect.activeRocks !== null) effect.activeRocks = game.rocks.filter((rock) => rock.side === index).length;
       });
@@ -2393,7 +2449,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
       ball.vx = 0;
       ball.vy = 0;
       if (meltdown.activeSlam) {
-        const progress = Math.min(1, (time - meltdown.activeSlam.startedAt) / 260);
+        const progress = Math.min(1, (time - meltdown.activeSlam.startedAt) / 208);
         const eased = 1 - (1 - progress) * (1 - progress);
         target.trappedBy = null;
         target.powered = false;
@@ -2421,7 +2477,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
           endX: slamTarget.x,
           endY: slamTarget.y
         };
-        pushDamage(target.side, 3, target.x, target.y, { sfx: airSlamSfx, volumeScale: 0.85 });
+        pushDamage(target.side, 1, target.x, target.y, { sfx: airSlamSfx, volumeScale: 0.85 });
         addExplosion(slamTarget.x, slamTarget.y, "#22d3ee", 0.85);
       }
       if (typed >= text.length && !meltdown.activeSlam && game.defeatedSide === null) {
@@ -2567,13 +2623,27 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
     const drawBall = (ball) => {
       const effect = game.effects[ball.side];
       ctx.globalAlpha = isFearPlasma(ball) ? 0.38 : effect.transparency !== null ? Math.max(0.18, 1 - effect.transparency / 100) : 1;
-      const skin = performance.now() < ball.hurtUntil ? hurtSkinImages[ball.side] || skinImages[ball.side] : skinImages[ball.side];
+      // const skin = performance.now() < ball.hurtUntil ? hurtSkinImages[ball.side] || skinImages[ball.side] : skinImages[ball.side];
+      const skin = logoImages[ball.side];
       if (skin?.complete && skin.naturalWidth) {
+        const sourceWidth = skin.naturalWidth;
+        const sourceHeight = skin.naturalHeight;
+        let sx = 0;
+        let sy = 0;
+        let sw = sourceWidth;
+        let sh = sourceHeight;
+        if (sourceWidth > sourceHeight) {
+          sw = sourceHeight;
+          sx = Math.round((sourceWidth - sourceHeight) / 2);
+        } else if (sourceHeight > sourceWidth) {
+          sh = sourceWidth;
+          sy = Math.round((sourceHeight - sourceWidth) / 2);
+        }
         ctx.save();
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(skin, ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2);
+        ctx.drawImage(skin, sx, sy, sw, sh, ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2);
         ctx.restore();
         ctx.strokeStyle = "#111";
         ctx.lineWidth = 3;
@@ -2639,7 +2709,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         ? ball.swing.batStartAngle + swingProgress * Math.PI
         : getBaseballBatAngle(ball);
       const batLength = ball.r * 3.36;
-      const batWidth = ball.r * 3.44;
+      const batWidth = ball.r * 3.44 * 1.2;
 
       ctx.save();
       ctx.translate(ball.x, ball.y);
@@ -2955,17 +3025,26 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
         ctx.translate((bolt.a.x + bolt.b.x) / 2, (bolt.a.y + bolt.b.y) / 2);
         ctx.rotate(angle);
         ctx.globalAlpha = 1;
+        ctx.strokeStyle = "rgba(250, 204, 21, 0.95)";
+        ctx.lineWidth = 20;
+        ctx.shadowColor = "#facc15";
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.moveTo(-distance / 2, 0);
+        ctx.lineTo(distance / 2, 0);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
         if (lightningImage.complete && lightningImage.naturalWidth) {
-          ctx.drawImage(lightningImage, -distance / 2, -ballRadius * 0.58, distance, ballRadius * 1.16);
+          ctx.drawImage(lightningImage, -distance / 2, -ballRadius * 0.9, distance, ballRadius * 1.8);
         } else {
           ctx.strokeStyle = "#fff04a";
-          ctx.lineWidth = 14;
+          ctx.lineWidth = 20;
           ctx.beginPath();
           ctx.moveTo(-distance / 2, 0);
           ctx.lineTo(distance / 2, 0);
           ctx.stroke();
           ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 5;
+          ctx.lineWidth = 7;
           ctx.stroke();
         }
         ctx.restore();
@@ -3058,10 +3137,12 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
             if (time >= ball.overloadChargeAt) {
               const target = balls[ball.side ? 0 : 1];
               const angle = Math.atan2(target.y - ball.y, target.x - ball.x);
+              const startDistance = Math.hypot(target.x - ball.x, target.y - ball.y);
               stopSfx(ball.fireChargeAudio);
               ball.fireChargeAudio = null;
               ball.overloadState = "dashing";
               ball.overloadDashStartedAt = time;
+              ball.overloadStartDistance = startDistance;
               ball.overloadSpeed = powerSpeed * 1.05;
               ball.overloadHit = false;
               game.effects[ball.side].overloadState = "Dashing";
@@ -3179,7 +3260,10 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
             if (ball.fighter.id !== "fire" || ball.overloadState !== "dashing" || ball.overloadHit) return;
             const enemy = balls[ball.side ? 0 : 1];
             const delaySeconds = Math.max(0, (time - ball.overloadDashStartedAt) / 1000);
-            const attackBonus = Math.max(0, ball.overloadBonus * 0.65 - delaySeconds * 0.9);
+            const startDistance = ball.overloadStartDistance ?? Math.hypot(enemy.x - ball.x, enemy.y - ball.y);
+            const closeRatio = 1 - Math.min(1, startDistance / (box.w * 0.72));
+            const closeBonus = Math.max(0, closeRatio) * 7;
+            const attackBonus = Math.max(0, ball.overloadBonus * 0.65 + closeBonus - delaySeconds * 0.55);
             const damage = Math.max(1, Math.round(4 + attackBonus));
             const angle = Math.atan2(enemy.y - ball.y, enemy.x - ball.x);
             pushDamage(enemy.side, damage, enemy.x, enemy.y);
@@ -3191,6 +3275,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
             ball.overloadState = "building";
             ball.overloadHit = true;
             ball.overloadBonus = 0;
+            ball.overloadStartDistance = 0;
             ball.overloadSpeed = 0;
             stopSfx(ball.fireChargeAudio);
             ball.fireChargeAudio = null;
@@ -3475,6 +3560,7 @@ function Battle({ fighters: selected, modifiers, settings, mode, recordGames, on
           if (time - ball.overloadDashStartedAt < 5500) return;
           ball.overloadState = "building";
           ball.overloadBonus = 0;
+          ball.overloadStartDistance = 0;
           ball.overloadSpeed = 0;
           game.effects[ball.side].overloadDamage = 0;
           game.effects[ball.side].overloadBonus = 0;
@@ -3576,14 +3662,25 @@ function EffectPanel({ fighter, effects, side, mode }) {
     return Math.max(2.5, 5 - Math.floor(extraTransparency / 5) * 0.5);
   };
   if (effects.meltdownState === "Meltdown") {
-    const meltdownAbilityText = effects.meltdownRole === "controller" ? "I Am In Control" : "Under God";
-    lines.push(`${effects.meltdownText}${effects.meltdownText?.length ? "_" : ""}`);
-    lines.push("Abilities disabled");
+    const panelLabel = effects.meltdownRole === "controller" ? "God" : "Helpless";
     return (
-      <div className="effect-panel">
+      <div className="effect-panel image-panel meltdown-panel">
         {mode !== "local" && <strong>{side}</strong>}
-        <span>Abilities: {meltdownAbilityText}</span>
-        {lines.map((line) => <small key={line}>{line}</small>)}
+        <span>{panelLabel}</span>
+        {effects.meltdownRole === "subject" && effects.meltdownText ? <small>{effects.meltdownText}</small> : null}
+        <img src={MELTDOWN_IMAGE_SRC} alt="Meltdown" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} />
+      </div>
+    );
+  }
+  if (fighter.id === "luck") {
+    return (
+      <div className="effect-panel luck-panel">
+        {mode !== "local" && <strong>{side}</strong>}
+        <div className={`slot-machine ${effects.luckState === "Spinning" ? "is-spinning" : ""}`}>
+          {effects.luckSlots.map((slot, index) => (
+            <b key={`${slot}-${index}`}>{LUCK_SLOT_LABELS[slot]}</b>
+          ))}
+        </div>
       </div>
     );
   }
@@ -3632,12 +3729,6 @@ function EffectPanel({ fighter, effects, side, mode }) {
     lines.push(`State: ${effects.spookyState}`);
     lines.push(`Next Spooky: ${effects.nextSpooky.toFixed(1)} sec`);
   }
-  if (fighter.id === "luck") {
-    lines.push(`State: ${effects.luckState}`);
-    lines.push(`Next Roll: ${effects.nextLuckRoll.toFixed(1)} sec`);
-    lines.push(`Impact Bonus: +${effects.luckImpactBonus}`);
-    if (effects.lifeSteal) lines.push("Life Steal");
-  }
   if (fighter.id === "air") {
     lines.push(`Next Blue Mode: ${effects.nextBlueMode.toFixed(1)} sec`);
   }
@@ -3655,13 +3746,6 @@ function EffectPanel({ fighter, effects, side, mode }) {
     <div className="effect-panel">
       {mode !== "local" && <strong>{side}</strong>}
       <span>{abilityLabel}: {abilityText}</span>
-      {fighter.id === "luck" && (
-        <div className={`slot-machine ${effects.luckState === "Spinning" ? "is-spinning" : ""}`}>
-          {effects.luckSlots.map((slot, index) => (
-            <b key={`${slot}-${index}`}>{LUCK_SLOT_LABELS[slot]}</b>
-          ))}
-        </div>
-      )}
       {lines.map((line) => <small key={line}>{line}</small>)}
     </div>
   );

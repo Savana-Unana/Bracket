@@ -119,14 +119,14 @@ Future Codex: check this file before asking what assets exist or what still need
 - Water, Electric, and Baseball draw visual-only accessories from `EAccessories`; these do not affect hitboxes.
 - Syringes use `EAttack/Syringe.png`.
 - Life flytraps use `Flytrap-Idle.png` and attack frames.
-- Baseball bat uses `EAttack/Basebat.png`.
+- Baseball bat uses `EAttack/Basebat.png`, rendered 20% wider than its previous visual width.
 - Tesla coils use `EAttack/Tesla.png`, rotated to match wall placement.
 - Digital Genesis objects are code-drawn glitch shapes. Settled box results are code-drawn; flytrap and tesla results reuse the existing Life flytrap and Electric tesla assets.
-- Earth Rockslide rocks are code-drawn and currently have no dedicated logo, skin, attack sprite, or SFX.
+- Earth Rockslide uses either a clustered burst of small code-drawn falling rocks or one giant code-drawn boulder, and currently has no dedicated logo, skin, attack sprite, or SFX.
 - Gravity moons use `ELogos/Moon-Logo.png`.
 - Fire Overload charge/dash is currently code-drawn.
 - Icicles use `EAttack/Icicle.png`.
-- Lightning zaps use `EAttack/Lightning.png`.
+- Lightning zaps use `EAttack/Lightning.png` with an added bright glow stroke for visibility.
 - The modifier corner button uses `OtherStuff/Modifier.png`.
 - Winner sounds use fighter-specific `*-Win.mp3` files when available, with `Default-Win.mp3` as fallback.
 - Luck Ball uses the `Luck-*.mp3` sound set.
@@ -134,12 +134,12 @@ Future Codex: check this file before asking what assets exist or what still need
 - Defrost contact shatter uses `ESFX/Frost-Shatter.mp3`.
 - Electric coil placement and zaps use `ESFX/Tesla-Place.mp3` and `ESFX/Tesla-Zap.mp3`.
 - Digital Genesis plays `ESFX/Digital-Spawn.mp3` when each new object spawns, then reuses `ESFX/Flytrap-Life.mp3`, `ESFX/Tesla-Place.mp3`, and `ESFX/PowerHit.mp3` when generated objects become flytraps, teslas, or boxes. Digital Meltdown starts with `ESFX/Digital-Crashout.mp3`, uses `ESFX/Air-Slam.mp3` for wall slams, and Digital wins with `ESFX/Digital-Win.mp3`.
-- Fire Overload uses `ESFX/Fire-Charge.mp3` during the exact charge window and `ESFX/Fire-Launch.mp3` when dashing.
+- Fire Overload uses `ESFX/Fire-Charge.mp3` during the exact charge window and `ESFX/Fire-Launch.mp3` when dashing; closer dash starts now add a much stronger damage and shove bonus.
 - Water liquid contact uses `ESFX/During-Liquid.mp3` only while contact is active.
 - Air Blue Mode uses `ESFX/Airrow-Appear.mp3`; wall slam damage uses `ESFX/Air-Slam.mp3`.
 - Powered wall damage uses `ESFX/PowerHit.mp3`.
 - Baseball uses `ESFX/Baseball-Charge.mp3`, `ESFX/Baseball-Swing.mp3`, `ESFX/Baseball-Hit.mp3`, and `ESFX/Baseball-Frenzy.mp3`.
-- Luck uses `ESFX/Luck-Gamble.mp3` when the slot reels start spinning, capped to the 1 second reel spin. `ESFX/Luck-Nothing.mp3` is capped to about 0.5 seconds for quick no-result feedback; `ESFX/Luck-Earn.mp3` and `ESFX/Luck-X.mp3` play at their source lengths, and `ESFX/Luck-Win.mp3` is used for wins. Luck bottles and slot reels are currently code-drawn.
+- Luck uses `ESFX/Luck-Gamble.mp3` when the slot reels start spinning, capped to the 1 second reel spin. `ESFX/Luck-Nothing.mp3` is capped to about 0.5 seconds for quick no-result feedback; `ESFX/Luck-Earn.mp3` is capped to 1 second and played at 60% of its previous volume; `ESFX/Luck-X.mp3` plays at its source length, and `ESFX/Luck-Win.mp3` is used for wins. Luck bottles and slot reels are currently code-drawn.
 - Fight start uses `ESFX/RoundBegin.mp3` when the countdown ends.
 - Ball explosions use `ESFX/Explosion1.mp3`, `ESFX/Explosion2.mp3`, and `ESFX/Explosion3.mp3`.
 - Duck button uses `ESFX/Honk.mp3`.
@@ -151,9 +151,9 @@ Future Codex: check this file before asking what assets exist or what still need
 - Poison/Toxic uses `Anti-Virus` on the opponent info box: fresh ball overlaps add progress, Water overlaps count only once per overlap, the first cleanse requires 5 contacts, and each cleanse raises the next requirement by 5 while reducing toxic damage by 1.
 - Gravity `Moon Lock` displays separate `Moon #1` and `Moon #2` states. Moons use `Moon-Logo.png`, orbit, launch after a full rotation, collide while orbiting, and return after launch. Moons are affected by liquid, icicle chill, and Baseball bat reflection, but not by syringes.
 - Air keeps `Blue Mode`, but its info panel no longer shows the damage range line.
-- Earth uses `Rockslide`: every 5 seconds, code-drawn rocks of mixed sizes fall from above the arena. Rocks collide only with other rocks and arena bounds, but each rock that overlaps the enemy deals 2 damage with no stun or power shot effect.
-- Digital uses `Genesis` and `Meltdown`: Genesis emits a code-drawn glitch shape every 2 seconds, slides it for 2-4 seconds without ball collision, then resolves it into a wall-valid flytrap, permanent no-collision tesla, or one-use box that deals 3 damage and launches the enemy in a random boosted direction. Genesis flytraps use the same latch, bite, animation, and spit-release behavior as Life flytraps. Genesis objects do not expire by time or count; Digital does not collide with its own settled objects, boxes and flytraps disappear only when the enemy touches them, and settled Genesis teslas join the Tesla zap web while staying on field. Meltdown triggers when Digital would fall to 1 HP, explodes every ball's active field objects as if their users died, shows `Winner:<Ball Name>` in both info boxes at 0.5 seconds per character, disables both balls' abilities, and hand-slams the opponent for 3 damage per typed character until the text finishes, then Digital dies.
+- Earth uses `Rockslide`: every 5 seconds, it has a 1/2 chance to spawn either a random clustered burst of 12-18 small code-drawn rocks or one giant boulder above the enemy's position at activation. Small rocks fall through the arena without colliding with the box, despawn off-screen, and deal 1 damage each on overlap. The giant boulder thuds on the ground if it misses; if it hits the enemy from above, it pulls the enemy underneath, deals 10 damage, disappears, and launches the enemy as a power shot.
+- Digital uses `Genesis` and `Meltdown`: Genesis emits a code-drawn glitch shape every 2 seconds, slides it for 2-4 seconds without ball collision, then resolves it into a wall-valid flytrap, permanent no-collision tesla, or one-use box that deals 3 damage and launches the enemy in a random boosted direction. Genesis flytraps use the same latch, bite, animation, and spit-release behavior as Life flytraps. Genesis objects do not expire by time or count; Digital does not collide with its own settled objects, boxes and flytraps disappear only when the enemy touches them, and settled Genesis teslas join the Tesla zap web while staying on field. Meltdown triggers when Digital would fall to 1 HP, explodes every ball's active field objects as if their users died, shows `public/Meltdown.png` in both info boxes if provided, disables both balls' abilities, and hand-slams the opponent for 3 damage per typed character until the text finishes, then Digital dies.
 - Fear uses `Spooky`: every 5 seconds it toggles between Normal and Plasma. In Plasma, Fear has no interaction with balls, projectiles, constructs, or objects. On returning to Normal, it jumpscares if the enemy is close enough, dealing 5 damage, healing Fear by 5 HP, and adding 1 toxic stack.
-- Luck uses `Roll or Die`: its info box shows three code-drawn slot reels. Every 2 seconds it spins for 1 second, then resolves Glove, Bottle, Arrows, and X results. Glove adds persistent impact damage, Bottle heals and throws direct-damage stun bottles, Arrows swaps positions and optionally HP, X self-damages, and any all-non-X roll grants Life Steal. Life Steal only heals from direct contact and Luck bottle damage, not toxin, tesla, flytrap, or Genesis box damage.
+- Luck uses `Roll or Die`: its info box is replaced entirely by three code-drawn slot reels. Every 2 seconds it spins for 1 second, then resolves Glove, Bottle, Arrows, and X results. Glove adds persistent impact damage, Bottle heals and throws direct-damage stun bottles, Arrows swaps positions and optionally HP, X self-damages, and any all-non-X roll grants Life Steal. Life Steal only heals from direct contact and Luck bottle damage, not toxin, tesla, flytrap, or Genesis box damage.
 - Tesla webs deactivate when the round ends, clearing coils, bolts, and queued zaps after the win condition is reached.
 - Leaderboard data is localStorage-backed and only records fights when the select-screen record toggle is enabled.

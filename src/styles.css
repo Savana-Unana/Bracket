@@ -2,6 +2,7 @@
   color: #101010;
   background: #050505;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --arena-size: min(calc(100vw - 42px), calc(100vh - 214px), 700px);
 }
 
 * {
@@ -459,6 +460,20 @@ button {
   display: block;
 }
 
+.skin-wrapper {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.skin-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .preview-accessory {
   position: absolute;
   pointer-events: none;
@@ -682,6 +697,19 @@ canvas {
   border-right: 0;
 }
 
+.effect-panel.luck-panel,
+.effect-panel.image-panel {
+  place-items: center;
+  min-height: 68px;
+}
+
+.effect-panel.image-panel img {
+  display: block;
+  width: min(148px, 100%);
+  max-height: 62px;
+  object-fit: contain;
+}
+
 .effect-panel span,
 .effect-panel small {
   font-weight: 700;
@@ -695,20 +723,20 @@ canvas {
 .slot-machine {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  width: min(168px, 100%);
+  gap: 6px;
+  width: min(210px, 100%);
   margin: 2px auto;
 }
 
 .slot-machine b {
   display: grid;
   place-items: center;
-  min-height: 24px;
+  min-height: 44px;
   border: 2px solid #111;
   border-radius: 4px;
   background: #fff6c7;
   color: #111;
-  font-size: 0.72rem;
+  font-size: 0.86rem;
   line-height: 1;
 }
 
